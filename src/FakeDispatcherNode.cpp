@@ -16,11 +16,12 @@ int main(int argc, char** argv)
 {
 	ros::init(argc, argv, "image_publisher_node");
 	ros::NodeHandle n;
-	int numOfPipes;
+	int numOfPipes = 1;
 	int currentPipeMinusOne = 0;
-	if(!(n.hasParam("numPipes")))
+	if(!(n.hasParam("/DispatcherNode/numPipes"))) //FIXME this might need to be /FakeDispatcher/numPipes, but it's left like this so the transition to the real dispatcher won't end up not having a numPipes argument
 		ROS_INFO("the parameter 'numPipes' for the dispatcher node hasn't been specified; assuming 1 to ensure that no images are lost. This may cause severe back-up issues in a long mission.");
 	n.param<int>("numPipes", numOfPipes, 1); //gets the numPipes param (so that we know where to publish), defaulting to 1 if it can't be read.
+	ROS_INFO("%d", numOfPipes);
 
 	std::vector<ros::Publisher> impose_pub_vector(numOfPipes); //vector of publishers
 	for(int i = 1; i <= numOfPipes; ++i)
@@ -68,7 +69,7 @@ int main(int argc, char** argv)
 	}
 
 	#ifdef ONEATATIME
-	ros::Rate loop_rate(.25);
+	ros::Rate loop_rate(1); // 1 per second is fairly realistic
 	#else
 	ros::Rate loop_rate(25); //rate is the number of outer loop iterations per second
 	//Also, we need the loop rate to be relatively quick becuase we don't want delay in dispatching images. Delay in dispatching images could lead to wasted execution time and potential incorrect location stamps.
@@ -77,14 +78,14 @@ int main(int argc, char** argv)
 	while(n.ok())
 	{
 		//We need to dispatch each of the images in the new directory
-		ROS_INFO("Looking at path %s", im_fetch_path.string().c_str());
+//		ROS_INFO("Looking at path %s", im_fetch_path.string().c_str());
 		fs::directory_iterator end_itr;
 		for(fs::directory_iterator cur_path_itr(im_fetch_path); cur_path_itr != end_itr; cur_path_itr++)
 		{
-			ROS_INFO("I'm looking at this file: %s", cur_path_itr->path().string().c_str());
+//			ROS_INFO("I'm looking at this file: %s", cur_path_itr->path().string().c_str());
 			if(fs::is_directory(cur_path_itr->path()))
 			{
-				ROS_INFO_STREAM_ONCE("There's a directory in the ~/images/new path; this is currently unhandled.");
+				ROS_INFO_ONCE("There's a directory in the ~/images/new path; this is currently unhandled.");
 				fs::rename(cur_path_itr->path(), error_path / cur_path_itr->path().filename());
 
 				//FIXME Don't forget to move this file to the folder for files with errors.
@@ -130,7 +131,6 @@ int main(int argc, char** argv)
 		} //Ends the for loop
 		ros::spinOnce();
 		loop_rate.sleep();
-		ROS_INFO("I'm done sleeping");
 	}
 	//It shouldn't get here until you hit ctrl-C, but we still need to specify a return value:
 	return 0;
