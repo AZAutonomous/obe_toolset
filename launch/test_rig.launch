@@ -1,3 +1,5 @@
+<!-- TBH, I'm not sure where this came from. I think it came from some MAVROS tutorial for communicating with a Pixhawk PX4-->
+
 <launch>
 
 	<arg name="fcu_url" default="serial:///dev/ttyACM0:921600" />
