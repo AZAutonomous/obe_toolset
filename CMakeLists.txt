@@ -9,6 +9,10 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
 )
 
+find_package(Boost REQUIRED COMPONENTS
+  filesystem
+)
+
 ## Generate added messages and services
 #generate_messages( DEPENDENCIES
 #  std_msgs  # Or other packages containing msgs
