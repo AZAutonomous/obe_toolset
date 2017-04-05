@@ -61,11 +61,11 @@ int main(int argc, char** argv)
 				{
 					obe_toolset::ImageAndPose impose_msg; //This is the custom message type that has a sensor_msgs::Image msg and a std_msgs::Pose message.
 					impose_msg.image = *(cv_bridge::CvImage(std_msgs::Header(), "bgr8", newImage).toImageMsg()); //The meat of this line is from the image_transport tutorial; I just de-reference their piece to get a sensor_msgs::Image.  Note: There's probably a better way to do this, but it will work for now.
-					//This is where we need to assign the position pieces. (Use UTM values.
-					impose_msg.position.x = ; //fakes an x UTM value
-					impose_msg.position.y = ; //etc...
-					impose_msg.position.z = ;
-					//These values should be collected from one of the MAVROS pieces.
+					//This is the point where the fakeing things comes in.
+					impose_msg.position.x = 256; //fakes an x UTM value
+					impose_msg.position.y = 65536; //etc...
+					impose_msg.position.z = 16777216;
+					//End the faking it stuff.
 					impose_pub.publish(impose_msg); //send the impose message.
 				}
 			}

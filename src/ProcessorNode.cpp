@@ -3,6 +3,7 @@
 #include <opencv2/highgui/highgui.hpp>//FIXME Probably can be deleted; I think it's for viewing the images.
 #include <cv_bridge/cv_bridge.h>//CV_Bridge required include for image_transport
 #include <ros/console.h> //This is maybe for ROS_ERROR and ROS_INFO? Not sure, maybe try compiling with this removed.
+#include <obe_toolset/ImageAndPose.h> //For the custom ImageAndPose message.
 
 void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
