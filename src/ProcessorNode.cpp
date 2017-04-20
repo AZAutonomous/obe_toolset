@@ -4,33 +4,44 @@
 #include <cv_bridge/cv_bridge.h>//CV_Bridge required include for image_transport
 #include <ros/console.h> //This is maybe for ROS_ERROR and ROS_INFO? Not sure, maybe try compiling with this removed.
 #include <obe_toolset/ImageAndPose.h> //For the custom ImageAndPose message.
+#include "obe_toolset/ROI_detection.hpp"
+#include <list> //like vector, but it's a Double Linked List. It's used as the return type of ROI_Detection.
 
-void imageCallback(const sensor_msgs::ImageConstPtr& msg)
+void processImage(obe_toolset::ImageAndPose msg)
 {
-	try
+	CV_ImAndPose ROI_input; //this is a struct with cv::Mat image and doubles x,y,z for coordinates.
+	ROI_input.image = cv_bridge::toCvCopy(msg.image, "bgr8")->image; //pulls the image out of msg as a cv::Mat type
+	ROI_input.x = msg.position.x;//set the x,y,z coords (UTM)
+	ROI_input.y = msg.position.y;
+	ROI_input.z = msg.position.z;
+
+	//Process to extract the ROIs.
+	std::list<CV_ImAndPose> ROI_list = ROI_detection(ROI_input, 200); //runs ROI detection on the image in cv_frame. ROIs are returned in a list of cv::Mat's.
+
+	//Publish everything deemed to be an ROI
+	for(auto it = ROI_list.begin(), end = ROI_list.end(); it != end; ++it)
 	{
-		if(cv_bridge::toCvShare(msg, "bgr8")->image.empty())
-		{
-			ROS_ERROR("The image message appears to be empty");
-		}
-		cv::imshow("view", cv_bridge::toCvShare(msg, "bgr8")->image);
-		cv::waitKey(30);
-	}
-	catch (cv_bridge::Exception& e)
-	{
-		ROS_ERROR("Oh no =(");
+		obe_toolset::ImageAndPose msg;
+		msg.position.x = it->x;
+		msg.position.y = it->y;
+		msg.position.z = it->z;
+		msg.image = *(cv_bridge::CvImage(std_msgs::Header(), "bgr8", it->image).toImageMsg()); //cv_bridge converts cv::Mat to a message pointer. this pointer is dereferenced and put in the msg's image slot.
+		//this->pub.publish(msg); //Finally we can send the thing off!
 	}
 }
+
 
 int main(int argc, char** argv)
 {
 	ros::init(argc, argv, "image_listener");
 	ros::NodeHandle n;
-	cv::namedWindow("view");
-	cv::startWindowThread();
-	image_transport::ImageTransport it(n);
-	image_transport::Subscriber sub = it.subscribe("obe/image", 255, imageCallback);
+
+	ros::Subscriber sub = n.subscribe("obe/image", 255, processImage); //the topic needs to be changed here, possibly from input arguments
+
+	//PubToBaseStation = new ros::Publisher<> = n.publish();
+
 	ros::spin();
-	cv::destroyWindow("view");
+
+	//delete pub
 	return 0;
 }
