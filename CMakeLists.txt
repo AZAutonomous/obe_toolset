@@ -39,7 +39,7 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 #add_dependencies(Dispatcher ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 
-add_executable(Processor src/ProcessorNode.cpp)
+add_executable(Processor src/ProcessorNode.cpp src/ROI_detection.cpp)
 target_link_libraries(Processor ${catkin_LIBRARIES})
 add_dependencies(Processor ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
