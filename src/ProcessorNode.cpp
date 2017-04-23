@@ -4,7 +4,7 @@
 #include <cv_bridge/cv_bridge.h>//CV_Bridge required include for image_transport
 #include <ros/console.h> //This is maybe for ROS_ERROR and ROS_INFO? Not sure, maybe try compiling with this removed.
 #include <obe_toolset/ImageAndPose.h> //For the custom ImageAndPose message.
-#include "obe_toolset/ROI_detection.hpp" //I don't know 
+#include "obe_toolset/ROI_detection.hpp"
 #include <list> //like vector, but it's a Double Linked List. It's used as the return type of ROI_Detection.
 
 
@@ -19,6 +19,7 @@ public:
 
 	void processImage(obe_toolset::ImageAndPose msg) //needs to be static so we can take its address
 	{
+		ROS_INFO("I recieved some data!");
 		CV_ImAndPose ROI_input; //this is a struct with cv::Mat image and doubles x,y,z for coordinates.
 		ROI_input.image = cv_bridge::toCvCopy(msg.image, "bgr8")->image; //pulls the image out of msg as a cv::Mat type
 		ROI_input.x = msg.position.x;//set the x,y,z coords (UTM)
