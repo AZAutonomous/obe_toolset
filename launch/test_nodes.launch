@@ -1,0 +1,22 @@
+<!--
+	Kennon McKeever
+	3.31.17
+	This launchfile is meant to start the image capture and download script,
+	start the dispatcher node, and launch a certain amount of processor nodes
+	(the amount can change by modifying the code below)
+-->
+
+<launch>
+	<!--Image Capture Script-->
+		<!-- Note that it currently runs in the ~/images/new directory. Make sure this directory exists first. (Should exist if Ansible has anything to do about it) -->
+	<!--<node name="ImageCapture" pkg="obe_toolset" type="ImageCapture.sh" respawn="true" required="true" cwd="~/images/new"/> -->
+	
+	<!--launch the fake processor node (just one for now)-->
+	<node name="ProcessorNode1" pkg="obe_toolset" type="Processor" respawn="true">
+		<remap from="/obe/imagePipeN" to="/obe/imagePipe1" />
+	</node>
+	
+	<!--launch the fake dispatcher node -->
+	<node name="DispatcherNode" pkg="obe_toolset" type="FakeDispatcher" respawn="true" />
+	
+</launch>
