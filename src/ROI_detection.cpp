@@ -1,13 +1,16 @@
 //Kennon McKeever
 //4.4.17
 //ROI Detection
+//This code is partly from here: http://docs.opencv.org/2.4/doc/tutorials/imgproc/imgtrans/canny_detector/canny_detector.html
 
 #include "opencv2/imgproc/imgproc.hpp"
 #include <list>
 #include "obe_toolset/ROI_detection.hpp"
 #include <ros/console.h> //This is so we can send info or error messages when the ROI_detection method fails.
+#include <cmath>
+//#define DEBUG_KENNON
+//#define KENNON_TEST_THRESH_VALS
 
-//This code is partly from here: http://docs.opencv.org/2.4/doc/tutorials/imgproc/imgtrans/canny_detector/canny_detector.html
 
 //modifies the image in place, does what's found in the canny tutorial
 cv::Mat CannyThreshold(cv::Mat& image, double lowThreshold, double highThreshold)
@@ -22,11 +25,42 @@ cv::Mat CannyThreshold(cv::Mat& image, double lowThreshold)
 	return CannyThreshold(image, lowThreshold, 3.0 * lowThreshold);
 }
 
+cv::Mat KennonsSobelStuff(cv::Mat image, int PxValThresh)
+{
+	cv::Mat scratch;
+	cv::blur(image, scratch, cv::Size(3,3));
+	cv::Sobel(scratch, scratch, CV_32F, 1, 0);
+	scratch = scratch > PxValThresh;
+	return scratch;
+}
+
+void displayImage(const cv::Mat& image)
+{
+	cv::namedWindow("me", cv::WINDOW_NORMAL);
+	cv::imshow("me", image);
+	cv::waitKey(1250);
+	//do I need to delete the window???
+}
+
+double degrees2radians(double degrees)
+{
+	return degrees * 3.1415926535898 / 180.;
+}
+
+
+
+
 
 
 //This function crops the original image and returns a list of images. All of said images are of the CV_ImAndPose type so they can be stamped with UTM location data.
-std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double AGL_feet) //, double Roll_deg, double Pitch_deg, double Yaw_deg) //the roll pitch yaw stuff is to be figured out later. right now I assume 0,0,0 and commented this out so that nobody thinks the code will work if they decide to set them.
+std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vertical_FOV_degrees, double camera_horizontal_FOV_degrees) //, double Roll_deg, double Pitch_deg, double Yaw_deg) //the roll pitch yaw stuff is to be figured out later. right now I assume 0,0,0 and commented this out so that nobody thinks the code will work if they decide to set them.
 {
+	ROS_WARN_ONCE("Please note that the ROI detection currently can't handle location estimation with images that aren't downward-facing. Proceeding with roll, pitch = 0.");
+	//these are settable values that change how this function behaves
+	int threshVal = 99;
+	int boundingBoxPxLim = 52;
+	int dilationSize = 9;
+
 	std::list<CV_ImAndPose> output;
 	cv::Mat img(imAndPose.image); //extract the image from the data packet
 	if(!img.data)
@@ -36,14 +70,117 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double AGL_feet) /
 	}
 	cv::Mat scratch_image(img), temp; //need a copy as a scratchpad
 	//cv::InputArray Image_gray, Image_scratch, Image_edges, Image_filled;
-	cv::cvtColor( scratch_image, scratch_image, CV_BGR2GRAY);
+	//cv::cvtColor( scratch_image, scratch_image, CV_BGR2GRAY);
 
-	temp = CannyThreshold(scratch_image, .2);
+	cv::Mat colors[3];
+	cv::split(img, colors);
 
-	cv::namedWindow("me");
-	cv::imshow("me", temp);
-	cv::waitKey(0);
+	#ifdef KENNON_TEST_THRESH_VALS
+	int i = 0;
+	for(int i = 75; i <= 105; i += 5)
+	{
+		temp = KennonsSobelStuff(colors[0], i);
+		cv::Mat temp_small;
+		cv::resize(temp, temp_small, cv::Size(), .23, .23);
+
+		cv::namedWindow("me");
+		cv::imshow("me", temp_small);
+		cv::waitKey(500);
+
+		ROS_INFO("Thresholding value is %i", i);
+	}
+	#endif //KENNON_TEST_THRESH_VALS
+
+	//This is the part that should be changed if you want a better detection accuracy...
+	cv::Mat accumulator = KennonsSobelStuff(colors[0], threshVal); //this one is for OR'ing the results all together
+	for(int i = 1; i < 3; i++)
+	{
+		cv::Mat temp = KennonsSobelStuff(colors[i], threshVal);
+	//	ROS_INFO("%i x %i", temp.rows, temp.cols);
+		accumulator |=  temp;
+	}
+
+	cv::dilate(accumulator, accumulator, cv::Mat::ones(dilationSize, dilationSize, CV_8U)); //stretches current edges found by a few pixels
+//	displayImage(accumulator);
+	//This portion is in charge of getting the bounding rectangles.
+	std::vector<std::vector<cv::Point>> contours; //probably a vector of vectors of points
+	std::vector<cv::Rect> boundingRectangles;
+	cv::findContours(accumulator, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE); //finds all contours that aren't contained in another contour and gives the corner points of them.
+	//there's a fair chance that the boundingRect stuff isn't needed.
+	std::vector<cv::Mat> arr;
+	cv::Mat bounding_box_mask;
+	//arr.push_back(accumulator);
+	/*for(size_t x = 0; x < contours.size(); ++x)
+	{
+		bounding_box_mask
+	}*/
+
+	//This part can be optimized not to use boundingRect (maybe) since the findContours function gives the bounding rect points anyway.
+	for(size_t contourIndex = 0; contourIndex < contours.size(); ++contourIndex)
+	{
+		cv::Rect tempRect = cv::boundingRect(contours[contourIndex]); //generate a rectangle based on the contour
+		if(tempRect.width < boundingBoxPxLim && tempRect.width < boundingBoxPxLim) //this is the filter function for rectangles.
+			boundingRectangles.push_back(tempRect);
+	}
+
+	#ifdef DEBUG_KENNON
+	cv::Mat drawing = img;
+	for( size_t i = 0; i< boundingRectangles.size(); i++ )
+	{
+		cv::Scalar color = cv::Scalar(0, 0, 0);
+		cv::rectangle( drawing, boundingRectangles[i].tl(), boundingRectangles[i].br(), color, 2, 8, 0 );
+    }
+	cv::imwrite(cv::String("/home/kennon/images/processed/proc.jpg"), drawing);
+	#endif
+
+	//in order to find the ROI locations, we need to find the center of the image.
+	double x_distance, y_distance; //x distance is the physical distance in the horizontal direction (cols)
+	double x_0, y_0; //center of the image
+	x_0 = img.cols / 2.0;
+	y_0 = img.rows / 2.0;
+	x_distance = 2.0 * imAndPose.z * tan(degrees2radians(camera_horizontal_FOV_degrees) / 2.0);
+	y_distance = 2.0 * imAndPose.z * tan(degrees2radians(camera_vertical_FOV_degrees) / 2.0);
+
+	//now we can loop over each of the bounding boxes to stamp them with locations.
+	ROS_INFO("There should be %d ROIs found....", int(boundingRectangles.size()));
+	for( size_t i = 0; i < boundingRectangles.size(); ++i)
+	{
+		CV_ImAndPose msgData;
+		msgData.image = img(boundingRectangles[i]); //crop image
+		//displayImage(msgData.image);
+		//find location in pixels
+		double x_roi, y_roi; // _roi is center of the ROI
+		x_roi = boundingRectangles[i].x + (boundingRectangles[i].width / 2.0);
+		y_roi = boundingRectangles[i].y + (boundingRectangles[i].height / 2.0);
+		//find the distance offset in the width and height directions.
+		double width_offset, height_offset; //these are for the actual distance offsets due to the pixel offsets.
+		width_offset = double(x_roi - x_0) / img.cols * x_distance;
+		height_offset = double(y_0 - y_roi) / img.rows * y_distance; //Note that y_roi and y_0 are flipped. This is because y=0 is the top of the image and not the bottom.
+		//assign the x and y position of the target, taking plane rotation into account.
+		//NOTE: This method is invalid if there is anything other than 0 for roll and pitch.
+		msgData.x = imAndPose.x + (width_offset * sin(imAndPose.yaw)) + (height_offset * cos(imAndPose.yaw));
+		msgData.y = imAndPose.y + (width_offset * -1.0 * cos(imAndPose.yaw)) + (height_offset * sin(imAndPose.yaw));
+		msgData.z = 0; //Anyone who has a preference for what this is can change it, but I assumed it should be 0 since the targets are on the ground.
+
+		//Now, set the RPY of the image. Yaw is the only one that's important and used as of 4.26.17, so the others will be set as 0.
+		msgData.roll = 0;
+		msgData.pitch = 0;
+		msgData.yaw = imAndPose.yaw;
+
+		output.push_back(msgData); //save it!
+		//ROS_INFO("ROI at pixel value %g,%g of image centered at %g,%g,%g at yaw %g (rad) is claimed to be at %g,%g", x_roi, y_roi, imAndPose.x, imAndPose.y, imAndPose.z, imAndPose.yaw, msgData.x, msgData.y);
+	}
+	/*
+	size_t boundingRectIndex = 0;
+	for(size_t contourIndex = 0; contourIndex < contours.size(); ++contourIndex)
+	{
+		cv::Rect tempRect = cv::boundingRect(contours[contourIndex]); //generate a rectangle based on the contour
+		if(tempRect.width > 75 || tempRect.width > 75) //this is the filter function for rectangles.
+
+	}
+	*/
 
 	return output;
 }
+
 

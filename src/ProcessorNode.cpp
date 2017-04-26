@@ -22,24 +22,30 @@ public:
 		ROS_INFO("I recieved some data!");
 		CV_ImAndPose ROI_input; //this is a struct with cv::Mat image and doubles x,y,z for coordinates.
 		ROI_input.image = cv_bridge::toCvCopy(msg.image, "bgr8")->image; //pulls the image out of msg as a cv::Mat type
-		ROI_input.x = msg.position.x;//set the x,y,z coords (UTM)
-		ROI_input.y = msg.position.y;
-		ROI_input.z = msg.position.z;
+		ROI_input.x = msg.x;//set the x,y,z coords (UTM)
+		ROI_input.y = msg.y;
+		ROI_input.z = msg.z;
+		ROI_input.roll = msg.roll;
+		ROI_input.pitch = msg.pitch;
+		ROI_input.yaw = msg.yaw;
 
 		//Process to extract the ROIs.
-		std::list<CV_ImAndPose> ROI_list = ROI_detection(ROI_input, 200.0);
-		//std::list<CV_ImAndPose> ROI_list = ROI_detection(ROI_input, 200); //runs ROI detection on the image in cv_frame. ROIs are returned in a list of cv::Mat's.
+		std::list<CV_ImAndPose> ROI_list = ROI_detection(ROI_input); //runs ROI detection on the image in cv_frame. ROIs are returned in a list of cv::Mat's.
 
 		//Publish everything deemed to be an ROI
 		auto end = ROI_list.end();
-		for(auto it = ROI_list.begin(); it != end; ++it)
+		ROS_INFO("I found %d ROIs in that image.", int(ROI_list.size()));
+		for(auto it = ROI_list.begin(); it != end; it++)
 		{
 			obe_toolset::ImageAndPose msg;
-			msg.position.x = it->x;
-			msg.position.y = it->y;
-			msg.position.z = it->z;
+			msg.x = it->x;
+			msg.y = it->y;
+			msg.z = it->z;
+			msg.roll = it->roll;
+			msg.pitch = it->pitch;
+			msg.yaw = it->yaw;
 			msg.image = *(cv_bridge::CvImage(std_msgs::Header(), "bgr8", it->image).toImageMsg()); //cv_bridge converts cv::Mat to a message pointer. this pointer is dereferenced and put in the msg's image slot.
-			//this->pub.publish(msg); //Finally we can send the thing off!
+			this->pub.publish(msg); //Finally we can send the thing off!
 		}
 	}
 

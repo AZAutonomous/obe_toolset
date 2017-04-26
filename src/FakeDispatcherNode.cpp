@@ -17,7 +17,7 @@ int main(int argc, char** argv)
 	int numOfPipes;
 	int currentPipeMinusOne = 0;
 	if(!(n.hasParam("numPipes")))
-		ROS_ERROR("the parameter 'numPipes' for the dispatcher node hasn't been specified; assuming 1 to ensure that no images are lost. This may cause severe back-up issues in a long mission.");
+		ROS_INFO("the parameter 'numPipes' for the dispatcher node hasn't been specified; assuming 1 to ensure that no images are lost. This may cause severe back-up issues in a long mission.");
 	n.param<int>("numPipes", numOfPipes, 1); //gets the numPipes param (so that we know where to publish), defaulting to 1 if it can't be read.
 
 	std::vector<ros::Publisher> impose_pub_vector(numOfPipes); //vector of publishers
@@ -102,9 +102,12 @@ int main(int argc, char** argv)
 					impose_msg.image = *(cv_bridge::CvImage(std_msgs::Header(), "bgr8", newImage).toImageMsg()); //The meat of this line is from the image_transport tutorial; I just de-reference their piece to get a sensor_msgs::Image.  Note: There's probably a better way to do this, but it will work for now.
 
 					//This is the point where the fakeing things comes in.
-					impose_msg.position.x = 256; //fakes an x UTM value
-					impose_msg.position.y = 65536; //etc...
-					impose_msg.position.z = 16777216;
+					impose_msg.x = 256.0; //fakes an x UTM value
+					impose_msg.y = 65536.0; //etc...
+					impose_msg.z = 60.96; //This is actually a decent guess (~200 ft)
+					impose_msg.roll = 0.0;
+					impose_msg.pitch = 0.0;
+					impose_msg.yaw = 0.0; //this is the only one that's used as of 4.26.17
 					//End the faking it stuff.
 
 					//publish to the current pipe that's due for another message. NOTE: In the future, this could have a system that keeps track of busy nodes so that no particular node gets bogged down. I'm kind of assuming that we have enough nodes and a fast enough ROI algorithm and randomness is on our side so that this doesn't get out of hand.
@@ -113,11 +116,6 @@ int main(int argc, char** argv)
 					//set up the current pipe for the next time we publish something.
 					currentPipeMinusOne++;
 					currentPipeMinusOne %= numOfPipes; //we want to wrap around
-//
-//					//for testing:
-//					std_msgs::String m;
-//					m.data = cur_path_itr->path().string();
-//					pub.publish(m);
 
 					//Now that we've published it, we can move the file to the processed folder
 					fs::rename(cur_path_itr->path(), processed_path / cur_path_itr->path().filename());

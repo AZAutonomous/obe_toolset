@@ -16,12 +16,13 @@
 
 struct CV_image_and_position__struct{
 	cv::Mat image;
-	float x, y, z;
+	double x, y, z;// x and y are utm (EastNorthUp scheme), z is AGL altitude. All are in meters
+	double roll, pitch, yaw; //These are in radians. Yaw is 0 at east, pi/2 at north. (Follows EastNorthUp scheme)
 };
 
 typedef struct CV_image_and_position__struct  CV_ImAndPose;
 
-std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double AGL_feet);//, double Roll_deg = 0, double Yaw_deg = 0); //the RPY stuf is commented out (even though it defaults to zero) because it doesn't do anything at the moment.
-
+//The defaults for this are the original plans for the camera stuff
+std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vertical_FOV_degrees = 50.0852, double camera_horizontal_FOV_degrees = 63.8418);
 
 #endif //defined ROI_DETECTION_H
