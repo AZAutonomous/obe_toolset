@@ -34,7 +34,7 @@ public:
 
 		//Publish everything deemed to be an ROI
 		auto end = ROI_list.end();
-		ROS_INFO("I found %d ROIs in that image.", int(ROI_list.size()));
+		//ROS_INFO("I found %d ROIs in that image.", int(ROI_list.size()));
 		for(auto it = ROI_list.begin(); it != end; it++)
 		{
 			obe_toolset::ImageAndPose msg;

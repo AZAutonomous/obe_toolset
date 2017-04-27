@@ -102,8 +102,8 @@ int main(int argc, char** argv)
 					impose_msg.image = *(cv_bridge::CvImage(std_msgs::Header(), "bgr8", newImage).toImageMsg()); //The meat of this line is from the image_transport tutorial; I just de-reference their piece to get a sensor_msgs::Image.  Note: There's probably a better way to do this, but it will work for now.
 
 					//This is the point where the fakeing things comes in.
-					impose_msg.x = 256.0; //fakes an x UTM value
-					impose_msg.y = 65536.0; //etc...
+					impose_msg.x = 0; //fakes an x UTM value
+					impose_msg.y = 0; //etc...
 					impose_msg.z = 60.96; //This is actually a decent guess (~200 ft)
 					impose_msg.roll = 0.0;
 					impose_msg.pitch = 0.0;

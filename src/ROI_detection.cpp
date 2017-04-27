@@ -8,7 +8,9 @@
 #include "obe_toolset/ROI_detection.hpp"
 #include <ros/console.h> //This is so we can send info or error messages when the ROI_detection method fails.
 #include <cmath>
-//#define DEBUG_KENNON
+
+#define DEBUG_KENNON
+//#define KENNON_GENERATE_POSTER_IMAGES
 //#define KENNON_TEST_THRESH_VALS
 
 
@@ -30,6 +32,9 @@ cv::Mat KennonsSobelStuff(cv::Mat image, int PxValThresh)
 	cv::Mat scratch;
 	cv::blur(image, scratch, cv::Size(3,3));
 	cv::Sobel(scratch, scratch, CV_32F, 1, 0);
+	#ifdef KENNON_GENERATE_POSTER_IMAGES
+	cv::imwrite(cv::String("/home/kennon/images/processed/Edges.jpg"), scratch);
+	#endif
 	scratch = scratch > PxValThresh;
 	return scratch;
 }
@@ -38,7 +43,8 @@ void displayImage(const cv::Mat& image)
 {
 	cv::namedWindow("me", cv::WINDOW_NORMAL);
 	cv::imshow("me", image);
-	cv::waitKey(1250);
+	cv::waitKey(1000);
+	cv::destroyWindow("me");
 	//do I need to delete the window???
 }
 
@@ -57,8 +63,16 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 {
 	ROS_WARN_ONCE("Please note that the ROI detection currently can't handle location estimation with images that aren't downward-facing. Proceeding with roll, pitch = 0.");
 	//these are settable values that change how this function behaves
+	#ifdef KENNON_GENERATE_POSTER_IMAGES
+	int threshVal = 160;
+	int boundingBoxPxUpperLim = 100;
+	int boundingBoxPxLowerLim = 60;
+	#else //KENNON_GENERATE_POSTER_IMAGES
 	int threshVal = 99;
-	int boundingBoxPxLim = 52;
+	int boundingBoxPxUpperLim = 51;
+	int boundingBoxPxLowerLim = 0;
+	#endif //KENNON_GENERATE_POSTER_IMAGES
+
 	int dilationSize = 9;
 
 	std::list<CV_ImAndPose> output;
@@ -116,21 +130,22 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 	}*/
 
 	//This part can be optimized not to use boundingRect (maybe) since the findContours function gives the bounding rect points anyway.
+	//It filters the bounding rectangles based on the if statement's conditions.
 	for(size_t contourIndex = 0; contourIndex < contours.size(); ++contourIndex)
 	{
 		cv::Rect tempRect = cv::boundingRect(contours[contourIndex]); //generate a rectangle based on the contour
-		if(tempRect.width < boundingBoxPxLim && tempRect.width < boundingBoxPxLim) //this is the filter function for rectangles.
+		if(tempRect.width < boundingBoxPxUpperLim && tempRect.width > boundingBoxPxLowerLim && tempRect.height < boundingBoxPxUpperLim && tempRect.height > boundingBoxPxLowerLim) //this is the filter function for rectangles.
 			boundingRectangles.push_back(tempRect);
 	}
 
 	#ifdef DEBUG_KENNON
-	cv::Mat drawing = img;
-	for( size_t i = 0; i< boundingRectangles.size(); i++ )
+	cv::Mat drawing(img);
+	for(size_t i = 0; i < boundingRectangles.size(); i++)
 	{
-		cv::Scalar color = cv::Scalar(0, 0, 0);
-		cv::rectangle( drawing, boundingRectangles[i].tl(), boundingRectangles[i].br(), color, 2, 8, 0 );
+		cv::Scalar color = cv::Scalar(255, 0, 255);
+		cv::rectangle( drawing, boundingRectangles[i].tl(), boundingRectangles[i].br(), color, 3, 8, 0 );
     }
-	cv::imwrite(cv::String("/home/kennon/images/processed/proc.jpg"), drawing);
+	cv::imwrite(cv::String("/home/kennon/images/processed/BoundingBoxes.jpg"), drawing);
 	#endif
 
 	//in order to find the ROI locations, we need to find the center of the image.
@@ -141,8 +156,11 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 	x_distance = 2.0 * imAndPose.z * tan(degrees2radians(camera_horizontal_FOV_degrees) / 2.0);
 	y_distance = 2.0 * imAndPose.z * tan(degrees2radians(camera_vertical_FOV_degrees) / 2.0);
 
-	//now we can loop over each of the bounding boxes to stamp them with locations.
-	ROS_INFO("There should be %d ROIs found....", int(boundingRectangles.size()));
+	//#ifdef DEBUG_KENNON
+	//ROS_INFO("There should be %d ROIs found....", int(boundingRectangles.size()));
+	//#endif
+
+	//now we can loop over each of the bounding boxes to stamp them with locations.	
 	for( size_t i = 0; i < boundingRectangles.size(); ++i)
 	{
 		CV_ImAndPose msgData;
@@ -159,7 +177,7 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 		//assign the x and y position of the target, taking plane rotation into account.
 		//NOTE: This method is invalid if there is anything other than 0 for roll and pitch.
 		msgData.x = imAndPose.x + (width_offset * sin(imAndPose.yaw)) + (height_offset * cos(imAndPose.yaw));
-		msgData.y = imAndPose.y + (width_offset * -1.0 * cos(imAndPose.yaw)) + (height_offset * sin(imAndPose.yaw));
+		msgData.y = imAndPose.y + (width_offset * -1.0 * cos(imAndPose.yaw)) + (-1.0 * height_offset * sin(imAndPose.yaw));
 		msgData.z = 0; //Anyone who has a preference for what this is can change it, but I assumed it should be 0 since the targets are on the ground.
 
 		//Now, set the RPY of the image. Yaw is the only one that's important and used as of 4.26.17, so the others will be set as 0.
@@ -168,7 +186,12 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 		msgData.yaw = imAndPose.yaw;
 
 		output.push_back(msgData); //save it!
-		//ROS_INFO("ROI at pixel value %g,%g of image centered at %g,%g,%g at yaw %g (rad) is claimed to be at %g,%g", x_roi, y_roi, imAndPose.x, imAndPose.y, imAndPose.z, imAndPose.yaw, msgData.x, msgData.y);
+		#ifdef DEBUG_KENNON
+		ROS_INFO("ROI at pixel value %g,%g of image centered at %g,%g,%g at yaw %g (rad) is claimed to be at %g,%g", x_roi, y_roi, imAndPose.x, imAndPose.y, imAndPose.z, imAndPose.yaw, msgData.x, msgData.y);
+		#endif
+		#ifdef KENNON_GENERATE_POSTER_IMAGES
+		cv::imwrite(cv::String("/home/kennon/images/processed/Cropped") + std::to_string(i) + cv::String(".jpg"), img(boundingRectangles[i]));
+		#endif
 	}
 	/*
 	size_t boundingRectIndex = 0;
