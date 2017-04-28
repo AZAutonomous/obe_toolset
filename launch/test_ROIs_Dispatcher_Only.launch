@@ -1,0 +1,22 @@
+<!--
+	Kennon McKeever
+	4.24.17
+	This launchfile is meant to start the image capture and download script,
+	start the dispatcher node, and launch a certain amount of processor nodes
+	
+	Unfortunately, there's no way to do this N times within a launchfile, and python scripts don't have any documentation until ros Kinetic (and this is meant for indigo)
+	This might be able to be done with a shell script that calls a launchfile repeatedly and changes some input args or something, but I don't want to spend that effort right now
+-->
+
+
+<!-- NOTE: Please make sure that the number of nodes that will be spawned is the same as that passed into the dispatcher node's params. Otherwise, some processor nodes may be idle or images may get dropped. -->
+
+<launch>
+
+	<!-- Launch the real dispatcher node-->
+	<node name="DispatcherNode" pkg="obe_toolset" type="FakeDispatcher" respawn="true">
+		<param name="numPipes" type="int" value="1" />
+		<remap from="/obe/imagePipe1" to="/obe/imagePipeN" />
+	</node>	
+	
+</launch>

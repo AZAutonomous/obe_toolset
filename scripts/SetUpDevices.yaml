@@ -1,0 +1,152 @@
+#Kennon McKeever, updated 4.14.17
+# 4.4.17, added user: odroid. Not the best solution, but it works.
+#In order to run this, ansible must be installed. See the instructions here: http://docs.ansible.com/ansible/intro_installation.html#latest-releases-via-apt-ubuntu
+#In order for it to set up the machines correctly, this directory's hosts file must have the onboard computers hostname or ip-address under [OnBoardEquipment]. Same for the base station.
+#If the command is run without the "-i hosts" part, then the OnBoardComputer and BaseStation group should be in the default ansible hosts file located at /etc/ansible/hosts  
+#If the on-board equipment is not an odroid (or you've set up a different user), then put this in place of "odroid" in the spot for obe_usr in the runable line. 
+
+#TO RUN: ansible-playbook SetUpDevices.yaml -i hosts --ask-pass --ask-sudo-pass --extra-vars obe_usr=odroid
+
+---
+- name: Set up the On-Board Equipment
+  hosts: OnBoardEquipment #The hosts file needs to have an [OnBoardEquipment] host class with odroid.local (or an ip adress for the onboard system) in it.
+  user: $obe_usr
+  become: true
+  vars:
+    IS_ARM: true #set to false for full ubuntu on an x86 or x86-64 machine
+    ROS_DISTRO: indigo
+    DISTRIB_ID: Ubuntu
+    DISTRIB_RELEASE: 14.04
+    DISTRIB_CODENAME: trusty
+    DISTRIB_DESCRIPTION: "Ubuntu 14.04"
+    NEED_MAVROS_EXTRAS: true
+
+#Note: The first couple of steps here basically follow what's listed on the ROS wiki for ARM, located here: http://wiki.ros.org/indigo/Installation/UbuntuARM
+  tasks:
+  
+  - name: install acl (so that the rest of the process works for ROS)
+    become: true
+    apt: pkg=acl
+  
+  - name: Update Locale (for ROS)
+    shell: update-locale LANG=C LANGUAGE=C LC_ALL=C LC_MESSAGES=POSIX
+    when: IS_ARM
+
+  - name: Add ROS Repo (for ROS)
+    #apt_repository: repo='deb http://packages.ros.org/ros/ubuntu trusty main' #add apt repo #NOTE: This was causing issues, so I replaced it with a shell command.
+    shell: 'echo "deb http://packages.ros.org/ros/ubuntu trusty main" > /etc/apt/sources.list.d/ros-latest.list'
+    
+  - name: Add ROS Apt Key (for ROS)
+    apt_key: keyserver=hkp://ha.pool.sks-keyservers.net id=0xB01FA116 #add apt key
+    
+  - name: apt-key update
+    shell: 'apt-key update'
+
+  - name: apt-get update
+    #apt: update_cache=true #apt-get update  #NOTE: Can't understand why this fails, despite being recommended. This is why I use the shell command for it.
+    shell: 'apt-get update' 
+    
+  - name: apt-get upgrade
+    #apt: upgrade=full #apt-get upgrade  #NOTE: could not find aptitude. Awesome error. This is why I use the shell command for it.
+    shell: 'apt-get upgrade -y'
+    
+  - name: install ROS Base (for ROS)
+    apt: pkg=ros-{{ ROS_DISTRO }}-ros-base #apt-get install indigo-desktop-full
+    
+  - name: install ROSDEP (for ROS)
+    apt: pkg=python-rosdep
+    
+  - name: Make rosdep 'Fresh' (for ROS)  #this removes the files that rosdep init use to make sure that rosdep init doesnt fail.
+    file: path=/etc/ros/rosdep/sources.list.d/20-default.list state=absent
+    
+  - name: Init rosdep (for ROS)
+    shell: 'rosdep init'
+    
+  - name: Update rosdep (for ROS) #This should not be sudo...
+    shell: 'rosdep update'
+    #sudo: false
+    
+  - name: add setup.bash into .bashrc (for ROS)
+    lineinfile: dest=~/.bashrc line='source /opt/ros/indigo/setup.bash' #This will source setup.bash every time a new terminal is opened
+    
+  - name: install python-rosinstall (for ROS)
+    apt: pkg=python-rosinstall 
+    
+  - name: install ROS image-transport (for ROS)
+    apt: pkg=ros-indigo-image-transport
+
+  - name: install ROS cv-bridge (for ROS)
+    apt: pkg=ros-indigo-cv-bridge
+
+  - name: Make sure C++ compiler is installed (for ROS)
+    apt: pkg=build-essential
+
+#  -name: Install GPhoto2
+#    apt: pkg=libgphoto2-2-dev
+#    Note: Instead of GPhoto2, we'll need to install CHDK. This is done below.
+
+#  - name: Install LibUSB (for CHDKPTP)
+#    apt: pkg=libusb-dev  #Maybe this needs to be libusb-1.0-0-dev? The documentation isn't quite clear on it.
+
+#  - name: Install Lua 5.2 (for CHDKPTP)  #NOTE: The CHDKPTP instructions are from the README.TXT and INSTALL.TXT in the svn repo here: http://subversion.assembla.com/svn/chdkptp/trunk/
+#    apt: pkg={{item}}
+#    with_items:
+#      - liblua5.2-0
+#      - liblua5.2-dev
+
+ # - name: Install GNU Readline 6 (for CHDKPTP)
+ #   apt: pkg=libreadline6-dev
+    
+#  - name: 
+  #Still need to do IUP and CD for the GUI libraries I think
+
+#  - name: Install ....  I'm sure there's more we need for CHDKPTP
+
+#  - name: Download CHDKPTP source
+
+  - name: Install OpenCV (C++)
+    apt: pkg=libopencv-dev
+
+  - name: Install MAVROS (for MAVROS)
+    apt: pkg=ros-indigo-mavros
+    
+  - name: Install MAVROS extras (optional) (for MAVROS)
+    apt: pkg=ros-indigo-mavros-extras
+    when: NEED_MAVROS_EXTRAS
+    
+#  - name: Install OpenCV (C++)
+#    apt: pkg=libhighgui-dev
+    
+  - name: Set up the ~/images required directories (for Dispatcher Node) #The reason behind these should be somewhere in the documentation, but basically, the dispatcher will move images from new to processed as soon as it can dispatch the job.
+    file: path="~/images/new" state=directory recurse=true  #NOTE: creates this directory, including the ~/images directory, if it doesn't already exist.
+    become: false  #NOTE: If this line isn't here, it tries to create /root/images/new instead.
+    
+  - name: Set up ~/images (2) (for Dispatcher Node)
+    file: path="~/images/processed" state=directory
+    become: false
+
+  - name: Set up ~/images (3) (for Dispatcher Node)
+    file: path="~/images/unsuccessful" state=directory
+    become: false
+    
+#---
+#- name: Set up the Base Station
+#  hosts: BaseStation #The hosts file needs to have a [BaseStation] class with BaseStation.local (or an ip adress for the system) in it.
+#  
+#  become: true
+#  vars:
+#    ROS_DISTRO: indigo
+#    DISTRIB_ID: Ubuntu
+#    DISTRIB_RELEASE: 14.04
+#    DISTRIB_CODENAME: trusty
+#    DISTRIB_DESCRIPTION: "Ubuntu 14.04"
+#
+##Note: The steps here basically mimic what's listed on the ROS wiki for ARM, located here: http://wiki.ros.org/indigo/Installation/UbuntuARM    
+#  tasks:
+#  
+#  - name: install acl (so that the rest of the process works)
+#    become: true
+#    apt: pkg=acl
+#    
+#    
+    
