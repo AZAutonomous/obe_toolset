@@ -71,11 +71,41 @@ cv::Rect padToSquare(cv::Rect rect, int imRows, int imCols)
 {
 	int maxdim = (rect.height > rect.width) ? rect.height : rect.width;
 	// Pad height
-	rect.height = maxdim;
+	if (rect.height < maxdim) {
+		int pad = maxdim - rect.height;
+		int padtop = pad / 2;
+		int padbot = pad - pad / 2;
+		if (padtop > rect.y) {
+			padbot += padtop - rect.y;
+			padtop = rect.y; 
+		}
+		if (imRows <= rect.y + rect.height + padbot) {
+			int temp = padbot;
+			padbot = imRows - (rect.y + rect.height + 1);
+			padtop += temp - padbot;
+			padtop = (padtop > rect.y) ? rect.y : padtop; // Clamp to top of image)
+		}
+		rect.y -= padtop;
+		rect.height += padbot;
+	}
 	// Pad width
-	rect.width = maxdim;
-
-	
+	if (rect.width < maxdim) {
+		int pad = maxdim - rect.width;
+		int padleft = pad / 2;
+		int padright = pad - pad / 2;
+		if (padleft > rect.x) {
+			padright += padleft - rect.x;
+			padleft = rect.x; 
+		}
+		if (imCols <= rect.x + rect.width + padright) {
+			int temp = padright;
+			padright = imRows - (rect.x + rect.width + 1);
+			padleft += temp - padright;
+			padleft = (padleft > rect.x) ? rect.x : padleft; // Clamp to left of image)
+		}
+		rect.x -= padleft;
+		rect.width += padright;
+	}
 
 	return rect;
 }
