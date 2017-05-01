@@ -1,9 +1,22 @@
 #!/usr/bin/env python
 import rospy
 from obe_toolset.msg import ImageAndPose
+import cv2
+# from sensor_msgs.msg import Image
+from cv_bridge import CvBridge, CvBridgeError
+
+bridge = CvBridge()
 
 def callback(data):
-    rospy.loginfo(rospy.get_caller_id() + "I heard some data!")
+    rospy.loginfo(rospy.get_caller_id())
+    cv_image = bridge.imgmsg_to_cv2(data.image, desired_encoding="passthrough")
+    rospy.loginfo("im size: " + str(cv_image.shape))
+    rospy.loginfo("x: " + str(data.x))
+    rospy.loginfo("y: " + str(data.y))
+    rospy.loginfo("z: " + str(data.z))
+    rospy.loginfo("roll: " + str(data.roll))
+    rospy.loginfo("pitch: " + str(data.pitch))
+    rospy.loginfo("yaw: " + str(data.yaw))
     #This is where you can pull the image and stuff from the message
         #data.image = the image, in bgr8 format. Use cv_bridge to get it out
         #data.x = easting in meters (UTM)
