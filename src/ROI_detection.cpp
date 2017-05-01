@@ -9,9 +9,15 @@
 #include <ros/console.h> //This is so we can send info or error messages when the ROI_detection method fails.
 #include <cmath>
 
-#define DEBUG_KENNON
-//#define KENNON_GENERATE_POSTER_IMAGES
+
+//#define DEBUG_KENNON
+//#define DESIGN_DAY
+#define KENNON_GENERATE_POSTER_IMAGES
 //#define KENNON_TEST_THRESH_VALS
+#ifdef KENNON_GENERATE_POSTER_IMAGES
+#include <stdlib.h>
+#include <time.h>
+#endif
 
 
 //modifies the image in place, does what's found in the canny tutorial
@@ -43,7 +49,7 @@ void displayImage(const cv::Mat& image)
 {
 	cv::namedWindow("me", cv::WINDOW_NORMAL);
 	cv::imshow("me", image);
-	cv::waitKey(1000);
+	cv::waitKey(10000000);
 	cv::destroyWindow("me");
 	//do I need to delete the window???
 }
@@ -53,9 +59,26 @@ double degrees2radians(double degrees)
 	return degrees * 3.1415926535898 / 180.;
 }
 
+//expands the rectangle in the first arg by the amount of pixels in the second arg.
+void expandRectangle(cv::Rect& rectangle, int expansionPx)
+{
+	rectangle.width += expansionPx;
+	rectangle.height += expansionPx;
+}
 
+// Expand rectangle to square, respecting image boundaries
+cv::Rect padToSquare(cv::Rect rect, int imRows, int imCols)
+{
+	int maxdim = (rect.height > rect.width) ? rect.height : rect.width;
+	// Pad height
+	rect.height = maxdim;
+	// Pad width
+	rect.width = maxdim;
 
+	
 
+	return rect;
+}
 
 
 //This function crops the original image and returns a list of images. All of said images are of the CV_ImAndPose type so they can be stamped with UTM location data.
@@ -63,15 +86,15 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 {
 	ROS_WARN_ONCE("Please note that the ROI detection currently can't handle location estimation with images that aren't downward-facing. Proceeding with roll, pitch = 0.");
 	//these are settable values that change how this function behaves
-	#ifdef KENNON_GENERATE_POSTER_IMAGES
+	/*#ifdef KENNON_GENERATE_POSTER_IMAGES
 	int threshVal = 160;
 	int boundingBoxPxUpperLim = 100;
 	int boundingBoxPxLowerLim = 60;
-	#else //KENNON_GENERATE_POSTER_IMAGES
+	#else //KENNON_GENERATE_POSTER_IMAGES */
 	int threshVal = 99;
-	int boundingBoxPxUpperLim = 51;
-	int boundingBoxPxLowerLim = 0;
-	#endif //KENNON_GENERATE_POSTER_IMAGES
+	int boundingBoxPxUpperLim = 48;
+	int boundingBoxPxLowerLim = 24;
+//	#endif //KENNON_GENERATE_POSTER_IMAGES
 
 	int dilationSize = 9;
 
@@ -135,7 +158,10 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 	{
 		cv::Rect tempRect = cv::boundingRect(contours[contourIndex]); //generate a rectangle based on the contour
 		if(tempRect.width < boundingBoxPxUpperLim && tempRect.width > boundingBoxPxLowerLim && tempRect.height < boundingBoxPxUpperLim && tempRect.height > boundingBoxPxLowerLim) //this is the filter function for rectangles.
+		{
+			tempRect = padToSquare(tempRect, img.rows, img.cols);
 			boundingRectangles.push_back(tempRect);
+		}
 	}
 
 	#ifdef DEBUG_KENNON
@@ -143,8 +169,11 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 	for(size_t i = 0; i < boundingRectangles.size(); i++)
 	{
 		cv::Scalar color = cv::Scalar(255, 0, 255);
-		cv::rectangle( drawing, boundingRectangles[i].tl(), boundingRectangles[i].br(), color, 3, 8, 0 );
+		cv::rectangle(drawing, boundingRectangles[i].tl(), boundingRectangles[i].br(), color, 3, 8, 0 );
     }
+    #ifdef DESIGN_DAY
+	displayImage(drawing);
+	#endif
 	cv::imwrite(cv::String("/home/kennon/images/processed/BoundingBoxes.jpg"), drawing);
 	#endif
 
@@ -160,7 +189,12 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 	//ROS_INFO("There should be %d ROIs found....", int(boundingRectangles.size()));
 	//#endif
 
-	//now we can loop over each of the bounding boxes to stamp them with locations.	
+	#ifdef KENNON_GENERATE_POSTER_IMAGES
+	srand(time(NULL));
+	cv::String my_rand = std::to_string(rand());
+	#endif
+
+	//now we can loop over each of the bounding boxes to stamp them with locations.
 	for( size_t i = 0; i < boundingRectangles.size(); ++i)
 	{
 		CV_ImAndPose msgData;
@@ -190,7 +224,7 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 		ROS_INFO("ROI at pixel value %g,%g of image centered at %g,%g,%g at yaw %g (rad) is claimed to be at %g,%g", x_roi, y_roi, imAndPose.x, imAndPose.y, imAndPose.z, imAndPose.yaw, msgData.x, msgData.y);
 		#endif
 		#ifdef KENNON_GENERATE_POSTER_IMAGES
-		cv::imwrite(cv::String("/home/kennon/images/processed/Cropped") + std::to_string(i) + cv::String(".jpg"), img(boundingRectangles[i]));
+		cv::imwrite(cv::String("/home/kennon/images/David/ROIs/Cropped_") + my_rand +cv::String("_") + std::to_string(i) + cv::String(".jpg"), img(boundingRectangles[i]));
 		#endif
 	}
 	/*
