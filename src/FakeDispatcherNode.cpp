@@ -38,7 +38,7 @@ int main(int argc, char** argv)
 
 	//This block makes sure that the needed directories are set up (I'm pretty sure they should be, since this node might end up running from one of them).
 	namespace fs = boost::filesystem;
-	fs::path home_directory("/home/kennon"); //THIS CAN'T BE ~ FOR WHATEVER REASON, OR THE CODE WILL BREAK. This might need to be changed for it to work on your system
+	fs::path home_directory("/home/odroid"); //THIS CAN'T BE ~ FOR WHATEVER REASON, OR THE CODE WILL BREAK. This might need to be changed for it to work on your system
 
 	fs::path new_path("images/new/"); //Will be used to get images.
 	fs::path processed_path("images/processed/");
