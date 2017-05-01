@@ -11,10 +11,10 @@
 
 
 //#define DEBUG_KENNON
-//#define DESIGN_DAY
-#define KENNON_GENERATE_POSTER_IMAGES
+#define DESIGN_DAY
+//#define KENNON_GENERATE_POSTER_IMAGES
 //#define KENNON_TEST_THRESH_VALS
-#ifdef KENNON_GENERATE_POSTER_IMAGES
+#ifdef DESIGN_DAY
 #include <stdlib.h>
 #include <time.h>
 #endif
@@ -38,8 +38,8 @@ cv::Mat KennonsSobelStuff(cv::Mat image, int PxValThresh)
 	cv::Mat scratch;
 	cv::blur(image, scratch, cv::Size(3,3));
 	cv::Sobel(scratch, scratch, CV_32F, 1, 0);
-	#ifdef KENNON_GENERATE_POSTER_IMAGES
-	cv::imwrite(cv::String("/home/kennon/images/processed/Edges.jpg"), scratch);
+	#ifdef DESIGN_DAY
+	cv::imwrite(cv::String("/home/odroid/images/processed/Edges.jpg"), scratch);
 	#endif
 	scratch = scratch > PxValThresh;
 	return scratch;
@@ -194,17 +194,15 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 		}
 	}
 
-	#ifdef DEBUG_KENNON
-	cv::Mat drawing(img);
+	#ifdef DESIGN_DAY
+	cv::Mat drawing = img.clone();
 	for(size_t i = 0; i < boundingRectangles.size(); i++)
 	{
 		cv::Scalar color = cv::Scalar(255, 0, 255);
 		cv::rectangle(drawing, boundingRectangles[i].tl(), boundingRectangles[i].br(), color, 3, 8, 0 );
-    }
-    #ifdef DESIGN_DAY
-	displayImage(drawing);
-	#endif
-	cv::imwrite(cv::String("/home/kennon/images/processed/BoundingBoxes.jpg"), drawing);
+	}
+	//displayImage(drawing);
+	cv::imwrite(cv::String("/home/odroid/images/processed/BoundingBoxes.jpg"), drawing);
 	#endif
 
 	//in order to find the ROI locations, we need to find the center of the image.
@@ -254,9 +252,17 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 		ROS_INFO("ROI at pixel value %g,%g of image centered at %g,%g,%g at yaw %g (rad) is claimed to be at %g,%g", x_roi, y_roi, imAndPose.x, imAndPose.y, imAndPose.z, imAndPose.yaw, msgData.x, msgData.y);
 		#endif
 		#ifdef KENNON_GENERATE_POSTER_IMAGES
-		cv::imwrite(cv::String("/home/kennon/images/David/ROIs/Cropped_") + my_rand +cv::String("_") + std::to_string(i) + cv::String(".jpg"), img(boundingRectangles[i]));
+		cv::imwrite(cv::String("/home/odroid/images/David/ROIs/Cropped_") + my_rand +cv::String("_") + std::to_string(i) + cv::String(".jpg"), img(boundingRectangles[i]));
 		#endif
 	}
+	#ifdef DESIGN_DAY
+	for (size_t i = 0; i < 3; ++i) {
+		if (i < boundingRectangles.size())
+			cv::imwrite(cv::String("/home/odroid/images/processed/ROI_") + std::to_string(i) + cv::String(".jpg"), img(boundingRectangles[i]));
+		else
+			cv::imwrite(cv::String("/home/odroid/images/processed/ROI_") + std::to_string(i) + cv::String(".jpg"), img(boundingRectangles[boundingRectangles.size() - 1]));
+	}
+	#endif	
 	/*
 	size_t boundingRectIndex = 0;
 	for(size_t contourIndex = 0; contourIndex < contours.size(); ++contourIndex)

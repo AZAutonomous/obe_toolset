@@ -50,6 +50,7 @@ int main(int argc, char** argv)
 
 	fs::path im_fetch_path(new_path);
 
+	fs::create_directories("FINDME");
 	fs::create_directories(im_fetch_path);
 	fs::create_directories(processed_path);
 	fs::create_directories(error_path);
