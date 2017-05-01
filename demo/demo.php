@@ -21,7 +21,9 @@
 	<div id="imagedisplay">
 		<img id="preprocessed" src="" alt="Preprocessed image" />
 		<img id="boundingbox" src="" alt="Image with bounding box(es)" />
-		<img id="roi" src="" alt="Extracted Region of Interest (ROI)" />
+		<img id="roi0" src="" alt="Extracted Region of Interest (ROI)" />
+		<img id="roi1" src="" alt="Extracted Region of Interest (ROI)" />
+		<img id="roi2" src="" alt="Extracted Region of Interest (ROI)" />
 	</div>
 </body>
 </html>

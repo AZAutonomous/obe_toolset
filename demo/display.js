@@ -28,7 +28,9 @@ function sendImage() {
 			setTimeout(function() {
 				document.getElementById("preprocessed").src = "/home/odroid/images/processed/Edges.jpg";
 				document.getElementById("boundingbox").src = "/home/odroid/images/processed/BoundingBoxes.jpg";
-				document.getElementById("preprocessed").src = "/home/odroid/images/processed/ROI.jpg";
+				document.getElementById("roi0").src = "/home/odroid/images/processed/ROI_0.jpg";
+				document.getElementById("roi1").src = "/home/odroid/images/processed/ROI_1.jpg";
+				document.getElementById("roi2").src = "/home/odroid/images/processed/ROI_2.jpg";
 				// Update stuff here?
 			}, 1000);
 		}
