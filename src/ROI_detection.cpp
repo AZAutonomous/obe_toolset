@@ -11,8 +11,8 @@
 
 
 //#define DEBUG_KENNON
-#define DESIGN_DAY
-//#define KENNON_GENERATE_POSTER_IMAGES
+//#define DESIGN_DAY
+#define EXPORT_IMAGE_LOCAL
 //#define KENNON_TEST_THRESH_VALS
 #ifdef DESIGN_DAY
 #include <stdlib.h>
@@ -116,15 +116,9 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 {
 	ROS_WARN_ONCE("Please note that the ROI detection currently can't handle location estimation with images that aren't downward-facing. Proceeding with roll, pitch = 0.");
 	//these are settable values that change how this function behaves
-	/*#ifdef KENNON_GENERATE_POSTER_IMAGES
-	int threshVal = 160;
-	int boundingBoxPxUpperLim = 100;
-	int boundingBoxPxLowerLim = 60;
-	#else //KENNON_GENERATE_POSTER_IMAGES */
 	int threshVal = 99;
 	int boundingBoxPxUpperLim = 48;
 	int boundingBoxPxLowerLim = 24;
-//	#endif //KENNON_GENERATE_POSTER_IMAGES
 
 	int dilationSize = 9;
 
@@ -217,11 +211,6 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 	//ROS_INFO("There should be %d ROIs found....", int(boundingRectangles.size()));
 	//#endif
 
-	#ifdef KENNON_GENERATE_POSTER_IMAGES
-	srand(time(NULL));
-	cv::String my_rand = std::to_string(rand());
-	#endif
-
 	//now we can loop over each of the bounding boxes to stamp them with locations.
 	for( size_t i = 0; i < boundingRectangles.size(); ++i)
 	{
@@ -251,8 +240,9 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 		#ifdef DEBUG_KENNON
 		ROS_INFO("ROI at pixel value %g,%g of image centered at %g,%g,%g at yaw %g (rad) is claimed to be at %g,%g", x_roi, y_roi, imAndPose.x, imAndPose.y, imAndPose.z, imAndPose.yaw, msgData.x, msgData.y);
 		#endif
-		#ifdef KENNON_GENERATE_POSTER_IMAGES
-		cv::imwrite(cv::String("/home/odroid/images/David/ROIs/Cropped_") + my_rand +cv::String("_") + std::to_string(i) + cv::String(".jpg"), img(boundingRectangles[i]));
+		#ifdef EXPORT_IMAGES_LOCAL
+        static int counter = 0;
+		cv::imwrite(cv::String("/home/odroid/images/ROIs/Cropped_") + cv::String("_") + std::to_string(counter++) + cv::String(".jpg"), img(boundingRectangles[i]));
 		#endif
 	}
 	#ifdef DESIGN_DAY
