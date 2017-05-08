@@ -39,7 +39,7 @@ cv::Mat KennonsSobelStuff(cv::Mat image, int PxValThresh)
 	cv::blur(image, scratch, cv::Size(3,3));
 	cv::Sobel(scratch, scratch, CV_32F, 1, 0);
 	#ifdef DESIGN_DAY
-	cv::imwrite(cv::String("/home/odroid/images/processed/Edges.jpg"), scratch);
+	cv::imwrite(cv::String("../images/processed/Edges.jpg"), scratch);
 	#endif
 	scratch = scratch > PxValThresh;
 	return scratch;
@@ -99,13 +99,16 @@ cv::Rect padToSquare(cv::Rect rect, int imRows, int imCols)
 		}
 		if (imCols <= rect.x + rect.width + padright) {
 			int temp = padright;
-			padright = imRows - (rect.x + rect.width + 1);
+			padright = imCols - (rect.x + rect.width + 1);
 			padleft += temp - padright;
 			padleft = (padleft > rect.x) ? rect.x : padleft; // Clamp to left of image)
 		}
 		rect.x -= padleft;
 		rect.width += padright;
 	}
+
+    // Our result should be a square!
+    assert(rect.width == rect.height);
 
 	return rect;
 }
@@ -196,7 +199,7 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 		cv::rectangle(drawing, boundingRectangles[i].tl(), boundingRectangles[i].br(), color, 3, 8, 0 );
 	}
 	//displayImage(drawing);
-	cv::imwrite(cv::String("/home/odroid/images/processed/BoundingBoxes.jpg"), drawing);
+	cv::imwrite(cv::String("../images/processed/BoundingBoxes.jpg"), drawing);
 	#endif
 
 	//in order to find the ROI locations, we need to find the center of the image.
@@ -242,15 +245,15 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 		#endif
 		#ifdef EXPORT_IMAGES_LOCAL
         static int counter = 0;
-		cv::imwrite(cv::String("/home/odroid/images/ROIs/Cropped_") + cv::String("_") + std::to_string(counter++) + cv::String(".jpg"), img(boundingRectangles[i]));
+		cv::imwrite(cv::String("../images/rois/Cropped_") + cv::String("_") + std::to_string(counter++) + cv::String(".jpg"), img(boundingRectangles[i]));
 		#endif
 	}
 	#ifdef DESIGN_DAY
 	for (size_t i = 0; i < 3; ++i) {
 		if (i < boundingRectangles.size())
-			cv::imwrite(cv::String("/home/odroid/images/processed/ROI_") + std::to_string(i) + cv::String(".jpg"), img(boundingRectangles[i]));
+			cv::imwrite(cv::String("../images/processed/ROI_") + std::to_string(i) + cv::String(".jpg"), img(boundingRectangles[i]));
 		else
-			cv::imwrite(cv::String("/home/odroid/images/processed/ROI_") + std::to_string(i) + cv::String(".jpg"), img(boundingRectangles[boundingRectangles.size() - 1]));
+			cv::imwrite(cv::String("../images/processed/ROI_") + std::to_string(i) + cv::String(".jpg"), img(boundingRectangles[boundingRectangles.size() - 1]));
 	}
 	#endif	
 	/*

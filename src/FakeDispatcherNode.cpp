@@ -38,21 +38,17 @@ int main(int argc, char** argv)
 
 	//This block makes sure that the needed directories are set up (I'm pretty sure they should be, since this node might end up running from one of them).
 	namespace fs = boost::filesystem;
-	fs::path home_directory("/home/odroid"); //THIS CAN'T BE ~ FOR WHATEVER REASON, OR THE CODE WILL BREAK. This might need to be changed for it to work on your system
 
-	fs::path new_path("images/new/"); //Will be used to get images.
-	fs::path processed_path("images/processed/");
-	fs::path error_path("images/unsuccessful/");
-
-	new_path = home_directory / new_path;
-	processed_path = home_directory / processed_path;
-	error_path = home_directory / error_path;
+	fs::path new_path("../images/new/"); //Will be used to get images.
+	fs::path processed_path("../images/processed/");
+    fs::path roi_path("../images/rois/");
+	fs::path error_path("../images/unsuccessful/");
 
 	fs::path im_fetch_path(new_path);
 
-	fs::create_directories("FINDME");
 	fs::create_directories(im_fetch_path);
 	fs::create_directories(processed_path);
+    fs::create_directories(roi_path);
 	fs::create_directories(error_path);
 	//NOTE:: IF THERE IS AN ISSUE WITH PERMISSIONS FOR SOME REASON, IT MIGHT BE THAT THE LINES OF CODE ABOVE ARE REMOVING EXECUTE PERMISSIONS. JUST SOMETHING TO CONSIDER
 
