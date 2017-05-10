@@ -11,7 +11,7 @@
 
 
 //#define DEBUG_KENNON
-#define DESIGN_DAY
+//#define DESIGN_DAY
 
 #define EXPORT_IMAGES_LOCAL
 //#define KENNON_TEST_THRESH_VALS
