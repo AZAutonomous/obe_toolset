@@ -11,14 +11,24 @@
 
 
 //#define DEBUG_KENNON
-//#define DESIGN_DAY
-#define EXPORT_IMAGE_LOCAL
+#define DESIGN_DAY
+
+#define EXPORT_IMAGES_LOCAL
 //#define KENNON_TEST_THRESH_VALS
 #ifdef DESIGN_DAY
 #include <stdlib.h>
 #include <time.h>
 #endif
 
+
+void displayImage(const cv::Mat& image)
+{
+	cv::namedWindow("me", cv::WINDOW_NORMAL);
+	cv::imshow("me", image);
+	cv::waitKey(5000);
+	cv::destroyWindow("me");
+	//do I need to delete the window???
+}
 
 //modifies the image in place, does what's found in the canny tutorial
 cv::Mat CannyThreshold(cv::Mat& image, double lowThreshold, double highThreshold)
@@ -41,19 +51,11 @@ cv::Mat KennonsSobelStuff(cv::Mat image, int PxValThresh)
 	cv::Sobel(scratch, scratch, CV_32F, 1, 0); //scratch now has the x gradients
 	cv::magnitude(scratch, scratch_y, scratch); //scratch has the magnitude of both x and y gradients
 	#ifdef DESIGN_DAY
+	//displayImage(scratch);
 	cv::imwrite(cv::String("../images/processed/Edges.jpg"), scratch);
 	#endif
 	scratch = scratch > PxValThresh;
 	return scratch;
-}
-
-void displayImage(const cv::Mat& image)
-{
-	cv::namedWindow("me", cv::WINDOW_NORMAL);
-	cv::imshow("me", image);
-	cv::waitKey(10000000);
-	cv::destroyWindow("me");
-	//do I need to delete the window???
 }
 
 double degrees2radians(double degrees)
@@ -61,17 +63,11 @@ double degrees2radians(double degrees)
 	return degrees * 3.1415926535898 / 180.;
 }
 
-//expands the rectangle in the first arg by the amount of pixels in the second arg.
-void expandRectangle(cv::Rect& rectangle, int expansionPx)
-{
-	rectangle.width += expansionPx;
-	rectangle.height += expansionPx;
-}
-
 // Expand rectangle to square, respecting image boundaries
-cv::Rect padToSquare(cv::Rect rect, int imRows, int imCols)
+cv::Rect padToSquare(cv::Rect rect, int imRows, int imCols, unsigned expandPad = 0)
 {
 	int maxdim = (rect.height > rect.width) ? rect.height : rect.width;
+	maxdim += expandPad;
 	// Pad height
 	if (rect.height < maxdim) {
 		int pad = maxdim - rect.height;
@@ -79,7 +75,7 @@ cv::Rect padToSquare(cv::Rect rect, int imRows, int imCols)
 		int padbot = pad - pad / 2;
 		if (padtop > rect.y) {
 			padbot += padtop - rect.y;
-			padtop = rect.y; 
+			padtop = rect.y;
 		}
 		if (imRows <= rect.y + rect.height + padbot) {
 			int temp = padbot;
@@ -88,7 +84,7 @@ cv::Rect padToSquare(cv::Rect rect, int imRows, int imCols)
 			padtop = (padtop > rect.y) ? rect.y : padtop; // Clamp to top of image)
 		}
 		rect.y -= padtop;
-		rect.height += padbot;
+		rect.height += pad;
 	}
 	// Pad width
 	if (rect.width < maxdim) {
@@ -97,7 +93,7 @@ cv::Rect padToSquare(cv::Rect rect, int imRows, int imCols)
 		int padright = pad - pad / 2;
 		if (padleft > rect.x) {
 			padright += padleft - rect.x;
-			padleft = rect.x; 
+			padleft = rect.x;
 		}
 		if (imCols <= rect.x + rect.width + padright) {
 			int temp = padright;
@@ -106,11 +102,11 @@ cv::Rect padToSquare(cv::Rect rect, int imRows, int imCols)
 			padleft = (padleft > rect.x) ? rect.x : padleft; // Clamp to left of image)
 		}
 		rect.x -= padleft;
-		rect.width += padright;
+		rect.width += pad;
 	}
 
-    // Our result should be a square!
-    assert(rect.width == rect.height);
+    	// Our result should be a square!
+    	assert(rect.width == rect.height);
 
 	return rect;
 }
@@ -125,7 +121,7 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 	int boundingBoxPxUpperLim = 48;
 	int boundingBoxPxLowerLim = 24;
 
-	int dilationSize = 9;
+	int dilationSize = 9; //this parameter is used for blurring the thresholded image so that discontinuous edges will be connected.
 
 	std::list<CV_ImAndPose> output;
 	cv::Mat img(imAndPose.image); //extract the image from the data packet
@@ -188,7 +184,7 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 		cv::Rect tempRect = cv::boundingRect(contours[contourIndex]); //generate a rectangle based on the contour
 		if(tempRect.width < boundingBoxPxUpperLim && tempRect.width > boundingBoxPxLowerLim && tempRect.height < boundingBoxPxUpperLim && tempRect.height > boundingBoxPxLowerLim) //this is the filter function for rectangles.
 		{
-			tempRect = padToSquare(tempRect, img.rows, img.cols);
+			tempRect = padToSquare(tempRect, img.rows, img.cols, 4);
 			boundingRectangles.push_back(tempRect);
 		}
 	}
@@ -200,7 +196,7 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 		cv::Scalar color = cv::Scalar(255, 0, 255);
 		cv::rectangle(drawing, boundingRectangles[i].tl(), boundingRectangles[i].br(), color, 3, 8, 0 );
 	}
-	//displayImage(drawing);
+	displayImage(drawing);
 	cv::imwrite(cv::String("../images/processed/BoundingBoxes.jpg"), drawing);
 	#endif
 
@@ -246,8 +242,8 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 		ROS_INFO("ROI at pixel value %g,%g of image centered at %g,%g,%g at yaw %g (rad) is claimed to be at %g,%g", x_roi, y_roi, imAndPose.x, imAndPose.y, imAndPose.z, imAndPose.yaw, msgData.x, msgData.y);
 		#endif
 		#ifdef EXPORT_IMAGES_LOCAL
-        static int counter = 0;
-		cv::imwrite(cv::String("../images/rois/Cropped_") + cv::String("_") + std::to_string(counter++) + cv::String(".jpg"), img(boundingRectangles[i]));
+        	static int counter = 0;
+		cv::imwrite(cv::String("../images/rois/Cropped_") + std::to_string(counter++) + cv::String(".jpg"), img(boundingRectangles[i]));
 		#endif
 	}
 	#ifdef DESIGN_DAY
