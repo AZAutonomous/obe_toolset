@@ -35,9 +35,11 @@ cv::Mat CannyThreshold(cv::Mat& image, double lowThreshold)
 
 cv::Mat KennonsSobelStuff(cv::Mat image, int PxValThresh)
 {
-	cv::Mat scratch;
+	cv::Mat scratch, scratch_y;
 	cv::blur(image, scratch, cv::Size(3,3));
-	cv::Sobel(scratch, scratch, CV_32F, 1, 0);
+	cv::Sobel(scratch, scratch_y, CV_32F, 0, 1); //y gradients in scratch_y
+	cv::Sobel(scratch, scratch, CV_32F, 1, 0); //scratch now has the x gradients
+	cv::magnitude(scratch, scratch_y, scratch); //scratch has the magnitude of both x and y gradients
 	#ifdef DESIGN_DAY
 	cv::imwrite(cv::String("../images/processed/Edges.jpg"), scratch);
 	#endif
