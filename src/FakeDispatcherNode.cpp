@@ -9,6 +9,8 @@
 #include <vector>
 
 //#include "std_msgs/String.h"
+#define ONEATATIME //if this is defined, it will do one file at a time and pause in between files.
+
 
 int main(int argc, char** argv)
 {
@@ -65,8 +67,12 @@ int main(int argc, char** argv)
 		return(-1);
 	}
 
-	ros::Rate loop_rate(.5); //rate is the number of outer loop iterations per second
+	#ifdef ONEATATIME
+	ros::Rate loop_rate(.25);
+	#else
+	ros::Rate loop_rate(25); //rate is the number of outer loop iterations per second
 	//Also, we need the loop rate to be relatively quick becuase we don't want delay in dispatching images. Delay in dispatching images could lead to wasted execution time and potential incorrect location stamps.
+	#endif //ONEATATIME
 
 	while(n.ok())
 	{
@@ -116,6 +122,9 @@ int main(int argc, char** argv)
 
 					//Now that we've published it, we can move the file to the processed folder
 					fs::rename(cur_path_itr->path(), processed_path / cur_path_itr->path().filename());
+					#ifdef ONEATATIME
+					break;
+					#endif
 				}
 			}
 		} //Ends the for loop

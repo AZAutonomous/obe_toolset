@@ -1,0 +1,61 @@
+<!--
+	Kennon McKeever
+	5.18.17
+	This launchfile is meant to start the image capture and download script,
+	start the dispatcher node, and launch a certain amount of processor nodes
+	on the obe. This can be run from any computer on the network.
+	
+	Unfortunately, there's no way to do this N times within a launchfile, and python scripts don't have any documentation until ros Kinetic (and this is meant for indigo)
+	This might be able to be done with a shell script that calls a launchfile repeatedly and changes some input args or something, but I don't want to spend that effort right now
+-->
+
+
+<!-- NOTE: Please make sure that the number of nodes that will be spawned is the same as that passed into the dispatcher node's params. Otherwise, some processor nodes may be idle or images may get dropped. -->
+
+<launch>
+	<!-- Machine Declarations -->
+	<machine name="obe" address="odroid.local"/> <!-- These probably need the user and (maybe) password option -->
+	<machine name="groundStation" address=""/>
+	<!-- End Machine Declarations -->
+	
+	
+	<!-- Image Capture Script -->
+		<!-- Note that it currently runs in the ~/images/new directory. Make sure this directory exists first. (Should exist if Ansible has anything to do about it) -->
+		<!--<node name="ImageCapture" pkg="obe_toolset" type="ImageCapture.sh" respawn="true" required="true" cwd="~/images/new"/> -->
+	<!-- End Image Capture Script -->
+	
+	
+	<!-- Processor Nodes -->
+		<!--launch the processor nodes (currently 5). Copy and paste this chunk n times and update the name= and to= fields. ALSO UPDATE THIS IN THE DISPATCHER NODE'S PARAMS BELOW-->
+		<!--These ones run on the onboard system-->
+			<node machine="obe" name="ProcessorNode1" pkg="obe_toolset" type="Processor" respawn="true">
+				<remap from="/obe/imagePipeN" to="/obe/imagePipe1" />
+			</node>	
+			<node machine="obe" name="ProcessorNode2" pkg="obe_toolset" type="Processor" respawn="true">
+				<remap from="/obe/imagePipeN" to="/obe/imagePipe2" />
+			</node>
+			<node machine="obe" name="ProcessorNode3" pkg="obe_toolset" type="Processor" respawn="true">
+				<remap from="/obe/imagePipeN" to="/obe/imagePipe3" />
+			</node>
+			<node machine="obe" name="ProcessorNode4" pkg="obe_toolset" type="Processor" respawn="true">
+				<remap from="/obe/imagePipeN" to="/obe/imagePipe4" />
+			</node>
+			<node machine="obe" name="ProcessorNode5" pkg="obe_toolset" type="Processor" respawn="true">
+				<remap from="/obe/imagePipeN" to="/obe/imagePipe5" />
+			</node>
+			<!-- <node machine="obe" name="ProcessorNode6" pkg="obe_toolset" type="Processor" respawn="true">
+				<remap from="/obe/imagePipeN" to="/obe/imagePipe6" />
+			</node>	-->
+		<!--These ones run on the ground station (in case the obe doesn't have enough processing power and the rf link has extra bandwidth available-->
+			<!-- <node machine="groundStation" name="ProcessorNode6" pkg="obe_toolset" type="Processor" respawn="true">
+				<remap from="/obe/imagePipeN" to="/obe/imagePipe6" />
+			</node>	-->
+	<!-- End Processor Nodes -->	
+		
+	<!-- Dispatcher Node -->
+	<!-- <node name="DispatcherNode" pkg="obe_toolset" type="Dispatcher" respawn="true">-->
+	<node machine="obe" name="DispatcherNode" pkg="obe_toolset" type="Dispatcher" respawn="true">
+		<param name="numPipes" type="int" value="5" />
+	</node>
+	<!-- End Dispatcher node-->
+</launch>

@@ -13,8 +13,8 @@
 
 <launch>
 
-	<!-- Launch the real dispatcher node-->
-	<node name="DispatcherNode" pkg="obe_toolset" type="FakeDispatcher" respawn="true">
+	<!-- Launch the fake dispatcher node-->
+	<node name="FakeDispatcherNode" pkg="obe_toolset" type="FakeDispatcher" respawn="true">
 		<param name="numPipes" type="int" value="1" />
 		<remap from="/obe/imagePipe1" to="/obe/imagePipeN" />
 	</node>	
