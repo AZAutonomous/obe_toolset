@@ -10,7 +10,7 @@
 #include <cmath>
 
 
-//#define DEBUG_KENNON
+#define DEBUG_KENNON
 //#define DESIGN_DAY
 
 #define EXPORT_IMAGES_LOCAL
@@ -208,9 +208,9 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 	x_distance = 2.0 * imAndPose.z * tan(degrees2radians(camera_horizontal_FOV_degrees) / 2.0);
 	y_distance = 2.0 * imAndPose.z * tan(degrees2radians(camera_vertical_FOV_degrees) / 2.0);
 
-	//#ifdef DEBUG_KENNON
-	//ROS_INFO("There should be %d ROIs found....", int(boundingRectangles.size()));
-	//#endif
+	#ifdef DEBUG_KENNON
+	ROS_INFO("x distance: %g\ty distance: %g", x_distance, y_distance);
+	#endif
 
 	//now we can loop over each of the bounding boxes to stamp them with locations.
 	for( size_t i = 0; i < boundingRectangles.size(); ++i)
