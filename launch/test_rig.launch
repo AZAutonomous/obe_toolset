@@ -1,4 +1,4 @@
-<!-- TBH, I'm not sure where this came from. I think it came from some MAVROS tutorial for communicating with a Pixhawk PX4-->
+<!-- Taken from here: http://pixhawk.org/dev/ros/getting_started_tutorial -->
 
 <launch>
 
@@ -12,17 +12,17 @@
 		<param name="gcs_url" value="$(arg gcs_url)" />
 		<param name="target_system_id" value="$(arg tgt_system)" />
 		<param name="target_component_id" value="$(arg tgt_component)" />
- 
-		<rosparam command="load" file="$(find mavros)/launch/px4_blacklist.yaml" />
- 
+
+		<rosparam command="load" file="$(find mavros)/launch/px4_pluginlists.yaml" />
+
 		<!-- enable heartbeat send and reduce timeout -->
 		<param name="conn_heartbeat" value="5.0" />
 		<param name="conn_timeout" value="5.0" />
                 <!-- automatically start mavlink on USB -->
 		<param name="startup_px4_usb_quirk" value="true" />
- 
+
 	</node>
- 
+
 	<!--
 	<node name="camera" pkg="usb_cam" type="usb_cam_node">
 		<param name="video_device" value="/dev/video0" />
