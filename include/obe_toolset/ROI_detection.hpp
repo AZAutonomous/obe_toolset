@@ -3,7 +3,7 @@
 //This "library" is meant to use the Canny edge detection method to extract ROIs.
 #include <opencv2/highgui/highgui.hpp> //for the OpenCV stuff I think
 #include <list> //list from std namespace
-//#include <opencv2/opencv.hpp> //Is this what I need for the cv::MAT type?
+//#include <opencv2/core.hpp> //Is this what I need for the cv::MAT type?
 
 
 //this function does the guassian blur, sobel operator, thresholding, bounding boxes, and cropping. The cropped images are (currently) saved in the current folder.

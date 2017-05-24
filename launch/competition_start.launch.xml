@@ -14,8 +14,9 @@
 
 <launch>
 	<!-- Machine Declarations -->
-	<machine name="obe" address="odroid.local"/> <!-- These probably need the user and (maybe) password option -->
-	<machine name="groundStation" address=""/>
+	<machine name="obe" address="192.168.1.11" user="odroid" password="odroid" env-loader="/home/odroid/catkin_ws/src/obe_toolset/scripts/env_loader.sh"  /> <!-- These probably need the user and (maybe) password option -->
+	
+	<machine name="groundStation" address="192.168.1.5" user="aza-cv"/>
 	<!-- End Machine Declarations -->
 	
 	
@@ -31,18 +32,23 @@
 			<node machine="obe" name="ProcessorNode1" pkg="obe_toolset" type="Processor" respawn="true">
 				<remap from="/obe/imagePipeN" to="/obe/imagePipe1" />
 			</node>	
+	
 			<node machine="obe" name="ProcessorNode2" pkg="obe_toolset" type="Processor" respawn="true">
 				<remap from="/obe/imagePipeN" to="/obe/imagePipe2" />
 			</node>
+
 			<node machine="obe" name="ProcessorNode3" pkg="obe_toolset" type="Processor" respawn="true">
 				<remap from="/obe/imagePipeN" to="/obe/imagePipe3" />
 			</node>
+
 			<node machine="obe" name="ProcessorNode4" pkg="obe_toolset" type="Processor" respawn="true">
 				<remap from="/obe/imagePipeN" to="/obe/imagePipe4" />
 			</node>
+
 			<node machine="obe" name="ProcessorNode5" pkg="obe_toolset" type="Processor" respawn="true">
 				<remap from="/obe/imagePipeN" to="/obe/imagePipe5" />
 			</node>
+
 			<!-- <node machine="obe" name="ProcessorNode6" pkg="obe_toolset" type="Processor" respawn="true">
 				<remap from="/obe/imagePipeN" to="/obe/imagePipe6" />
 			</node>	-->
@@ -51,10 +57,11 @@
 				<remap from="/obe/imagePipeN" to="/obe/imagePipe6" />
 			</node>	-->
 	<!-- End Processor Nodes -->	
+
 		
 	<!-- Dispatcher Node -->
-	<!-- <node name="DispatcherNode" pkg="obe_toolset" type="Dispatcher" respawn="true">-->
-	<node machine="obe" name="DispatcherNode" pkg="obe_toolset" type="Dispatcher" respawn="true">
+	<node machine="obe" name="FakeDispatcherNode" pkg="obe_toolset" type="FakeDispatcher" respawn="true">
+	<!-- <node machine="obe" name="DispatcherNode" pkg="obe_toolset" type="Dispatcher" respawn="true"> -->
 		<param name="numPipes" type="int" value="5" />
 	</node>
 	<!-- End Dispatcher node-->
