@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 2.8.3)
 project(obe_toolset)
 SET(CMAKE_CXX_FLAGS "-std=c++0x") #May not be the best way to do this, but it works for now...
 
+#These were from me testing something...
+#find_package (GeographicLib 1.34 REQUIRED)
+#include_directories (${GeographicLib_INCLUDE_DIRS})
+
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   image_transport
@@ -34,9 +38,9 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
-#add_executable(Dispatcher src/DispatcherNode.cpp)
-#target_link_libraries(Dispatcher ${catkin_LIBRARIES})
-#add_dependencies(Dispatcher ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_executable(Dispatcher src/DispatcherNode.cpp)
+target_link_libraries(Dispatcher ${catkin_LIBRARIES}) #Also me testing stuff:  ${GeographicLib_LIBRARIES})
+add_dependencies(Dispatcher ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 
 add_executable(Processor src/ProcessorNode.cpp src/ROI_detection.cpp)
