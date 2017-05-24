@@ -72,7 +72,7 @@
   - name: install python-rosinstall (for ROS)
     apt: pkg=python-rosinstall 
     
-  - name: install ROS image-transport (for ROS)
+  - name: install ROS image-transport (for ROS) #May no longer be needed...
     apt: pkg=ros-indigo-image-transport
 
   - name: install ROS cv-bridge (for ROS)
@@ -114,6 +114,8 @@
     apt: pkg=ros-indigo-mavros-extras
     when: NEED_MAVROS_EXTRAS
     
+  - name: Install GeographicLib (for LLA to UTM coordinate conversion)
+
 #  - name: Install OpenCV (C++)
 #    apt: pkg=libhighgui-dev
     
