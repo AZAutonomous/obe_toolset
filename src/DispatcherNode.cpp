@@ -6,7 +6,8 @@
 #include <obe_toolset/ImageAndPose.h> //Needed for the custom Image and Pose message type
 #include <string>
 #include <vector>
-#include <GeographicLib/UTMUPS.hpp> //for conversion from Lat Lon to UTM
+#include <GeographicLib/UTMUPS.hpp> //for conversion from Lat Lon to UTM.
+FIXME What should the include path really be??
 
 //#include "std_msgs/String.h"
 //#define ONEATATIME //if this is defined, it will do one file at a time and pause in between files.
