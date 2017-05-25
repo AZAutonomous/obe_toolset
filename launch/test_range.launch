@@ -16,14 +16,14 @@
 	<!-- Machine Declarations -->
 	<machine name="obe" address="192.168.1.11" user="odroid" password="odroid" env-loader="/home/odroid/catkin_ws/src/obe_toolset/scripts/odroid_env_loader.sh"  /> <!-- These probably need the user and (maybe) password option -->
 	
-	<machine name="groundStation" address="192.168.1.5" user="aza-cv"/>
+	<!-- <machine name="groundStation" address="192.168.1.5" user="aza-cv"/> -->
 	<!-- End Machine Declarations -->
 	
 	
 	<!-- Image Capture Script -->
 		<!-- Note that it currently runs in the ~/images/new directory. Make sure this directory exists first. (Should exist if Ansible has anything to do about it) -->
-		<!-- <node name="ImageCapture" pkg="obe_toolset" type="capture.sh" respawn="true" required="true" /> -->
-		<node name="ImageCapture" pkg="obe_toolset" type="copy_images_to_new.sh" required="true" />
+		<!-- <node machine="obe" name="ImageCapture" pkg="obe_toolset" type="capture.sh" respawn="true" /> -->
+		<node machine="obe" name="ImageCapture" pkg="obe_toolset" type="copy_images_to_new.sh" required="false" /> <!-- required is false because otherwise it kills everything else when it finishes copying -->
 	<!-- End Image Capture Script -->
 	
 	
@@ -69,6 +69,6 @@
 
 
 	<!-- Display Node -->
-		<node machine="groundStation" name="Display_ROIs" pkg="obe_toolset" type="Recieve_ROIs.py" respawn="true" required="true" />
+		<node name="Display_ROIs" pkg="obe_toolset" type="Recieve_ROIs.py" respawn="true" />
 	<!-- End Display Node -->
 </launch>
