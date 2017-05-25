@@ -11,6 +11,7 @@
 //#include "std_msgs/String.h"
 #define ONEATATIME //if this is defined, it will do one file at a time and pause in between files.
 
+static const std::string NumPipesParamPath("/DispatcherNode/numPipes");
 
 int main(int argc, char** argv)
 {
@@ -18,10 +19,10 @@ int main(int argc, char** argv)
 	ros::NodeHandle n;
 	int numOfPipes = 1;
 	int currentPipeMinusOne = 0;
-	if(!(n.hasParam("/DispatcherNode/numPipes"))) //FIXME this might need to be /FakeDispatcher/numPipes, but it's left like this so the transition to the real dispatcher won't end up not having a numPipes argument
+	if(!(n.hasParam(NumPipesParamPath))) //FIXME this might need to be /FakeDispatcher/numPipes, but it's left like this so the transition to the real dispatcher won't end up not having a numPipes argument
 		ROS_INFO("the parameter 'numPipes' for the dispatcher node hasn't been specified; assuming 1 to ensure that no images are lost. This may cause severe back-up issues in a long mission.");
-	n.param<int>("numPipes", numOfPipes, 1); //gets the numPipes param (so that we know where to publish), defaulting to 1 if it can't be read.
-	ROS_INFO("%d", numOfPipes);
+	n.param<int>(NumPipesParamPath, numOfPipes, 1); //gets the numPipes param (so that we know where to publish), defaulting to 1 if it can't be read.
+	ROS_INFO("%d pipes passed in.", numOfPipes);
 
 	std::vector<ros::Publisher> impose_pub_vector(numOfPipes); //vector of publishers
 	for(int i = 1; i <= numOfPipes; ++i)
@@ -116,6 +117,7 @@ int main(int argc, char** argv)
 
 					//publish to the current pipe that's due for another message. NOTE: In the future, this could have a system that keeps track of busy nodes so that no particular node gets bogged down. I'm kind of assuming that we have enough nodes and a fast enough ROI algorithm and randomness is on our side so that this doesn't get out of hand.
 					impose_pub_vector[currentPipeMinusOne].publish(impose_msg); //send the impose message.
+					ROS_INFO("Sending to pipe %d of %d", currentPipeMinusOne + 1, numOfPipes);
 
 					//set up the current pipe for the next time we publish something.
 					currentPipeMinusOne++;
