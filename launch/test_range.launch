@@ -66,4 +66,9 @@
 		<param name="numPipes" type="int" value="5" />
 	</node>
 	<!-- End Dispatcher node-->
+
+
+	<!-- Display Node -->
+		<node machine="groundStation" name="Display_ROIs" pkg="obe_toolset" type="Recieve_ROIs.py" respawn="true" required="true" />
+	<!-- End Display Node -->
 </launch>
