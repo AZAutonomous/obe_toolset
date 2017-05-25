@@ -22,8 +22,8 @@
 	
 	<!-- Image Capture Script -->
 		<!-- Note that it currently runs in the ~/images/new directory. Make sure this directory exists first. (Should exist if Ansible has anything to do about it) -->
-		<!-- <node name="ImageCapture" pkg="obe_toolset" type="capture.sh" respawn="true" required="true" cwd="~/images/new"/> -->
-		<node name="ImageCapture" pkg="obe_toolset" type="copy_images_to_new.sh" required="true" cwd="~/images" />
+		<!-- <node name="ImageCapture" pkg="obe_toolset" type="capture.sh" respawn="true" required="true" /> -->
+		<node name="ImageCapture" pkg="obe_toolset" type="copy_images_to_new.sh" required="true" />
 	<!-- End Image Capture Script -->
 	
 	
