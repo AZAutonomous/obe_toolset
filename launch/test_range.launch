@@ -1,6 +1,6 @@
 <!--
 	Kennon McKeever
-	5.18.17
+	5.24.17
 	This launchfile is meant to start the image capture and download script,
 	start the dispatcher node, and launch a certain amount of processor nodes
 	on the obe. This can be run from any computer on the network.
@@ -22,7 +22,7 @@
 	
 	<!-- Image Capture Script -->
 		<!-- Note that it currently runs in the ~/images/new directory. Make sure this directory exists first. (Should exist if Ansible has anything to do about it) -->
-		<!--<node name="ImageCapture" pkg="obe_toolset" type="ImageCapture.sh" respawn="true" required="true" cwd="~/images/new"/> -->
+		<node name="ImageCapture" pkg="obe_toolset" type="capture.sh" respawn="true" required="true" cwd="~/images/new"/>
 	<!-- End Image Capture Script -->
 	
 	
