@@ -34,7 +34,7 @@
 		<arg name="tgt_system" default="1" />
 		<arg name="tgt_component" default="50" />
 
-		<node name="mavros" pkg="mavros" type="mavros_node" output="screen">
+		<node machine="obe" name="mavros" pkg="mavros" type="mavros_node" output="screen">
 			<param name="fcu_url" value="$(arg fcu_url)" />
 			<param name="gcs_url" value="$(arg gcs_url)" />
 			<param name="target_system_id" value="$(arg tgt_system)" />
