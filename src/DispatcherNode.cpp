@@ -6,8 +6,8 @@
 #include <obe_toolset/ImageAndPose.h> //Needed for the custom Image and Pose message type
 #include <string>
 #include <vector>
-#include <GeographicLib/UTMUPS.hpp> //for conversion from Lat Lon to UTM.
-FIXME What should the include path really be??
+#include <GeographicLib/UTMUPS.hpp> //for conversion from Lat Lon to UTM. In order to get this, download the source, unzip it, cd into it, mkdir build, cd build, cmake .., make, make install
+#include <sensor_msgs/NavSatFix.h> //for the mavros NavSatFix message
 
 //#include "std_msgs/String.h"
 //#define ONEATATIME //if this is defined, it will do one file at a time and pause in between files.
@@ -22,7 +22,7 @@ int fix_wait_ctr = -2;
 
 void locationCallback(const sensor_msgs::NavSatFix msg) //all this does is update the global variables listed above (for location).
 {
-	if (msg.status == -1)
+	if (0) //(msg.status == -1)
 	{
 		return; //we don't have a fix and can't update anything =/
 	}
@@ -37,10 +37,14 @@ void locationCallback(const sensor_msgs::NavSatFix msg) //all this does is updat
 		timestamp_prev = timestamp;
 
 		int zone; //dummy var for the UTMUPS conversion. This might be important at some point though, so maybe we should send it along with our ImAndPose stuff...
-		bool northp; //Hemisphere (true==northern)
-		GeographicLib::UTMUPS::Forward(msg.latitude, msg.longitude, &zone, &northp, &utm_x, &utm_y);
+		bool dummyNorthp; //Hemisphere (true==northern)
+		double dummyGamma; //no idea, dummy var so it will compile
+		double dummyK; //no idea; dummy var so it will compile
+		double msgLat = msg.latitude;
+		double msgLon = msg.longitude;
+		GeographicLib::UTMUPS::Forward(msgLat, msgLon, zone, dummyNorthp, utm_x, utm_y, dummyGamma, dummyK, -1, false);
 		utm_z = msg.altitude;
-		timestamp = msg.header.stamp
+		timestamp = msg.header.stamp;
 	}
 }
 
@@ -54,7 +58,7 @@ int main(int argc, char** argv)
 		ROS_INFO("the parameter 'numPipes' for the dispatcher node hasn't been specified; assuming 1 to ensure that no images are lost. This may cause severe back-up issues in a long mission.");
 	n.param<int>("numPipes", numOfPipes, 1); //gets the numPipes param (so that we know where to publish), defaulting to 1 if it can't be read.
 
-	n.subscribe("/mavros/global_position/global", 0, locationCallack);
+	n.subscribe("/mavros/global_position/global", 0, locationCallback);
 	std::vector<ros::Publisher> impose_pub_vector(numOfPipes); //vector of publishers
 	for(int i = 1; i <= numOfPipes; ++i)
 	{
@@ -62,14 +66,6 @@ int main(int argc, char** argv)
 		topic += std::to_string(i);
 		impose_pub_vector[i-1] = n.advertise<obe_toolset::ImageAndPose>(topic.c_str(), 512); //publishes to the obe/imagePipe<i> and buffers up to 512 images per pipe in case it can't send them all that quickly.
 	}
-
-//	image_transport::ImageTransport it(n);
-//	ros::Publisher pub = n.advertise<std_msgs::String>("obe/test", 100);
-//	image_transport::Publisher impose_pub = it.advertise("obe/image", 255); //Buffers up to 255 pictures in case connection is lost
-//	^^That used to be the old publisher.
-//	cv::Mat image = cv::imread("/home/kennon/images/BrentRambo.jpg", CV_LOAD_IMAGE_COLOR);
-//	cv::waitKey(30); //No idea what this line does...
-//	cv::imshow("view", image); //This can be used to see the image as it's published
 
 	//This block makes sure that the needed directories are set up (I'm pretty sure they should be, since this node might end up running from one of them).
 	namespace fs = boost::filesystem;
