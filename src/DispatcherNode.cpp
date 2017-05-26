@@ -42,7 +42,7 @@ void locationCallback(const sensor_msgs::NavSatFix msg) //all this does is updat
 		double dummyK; //no idea; dummy var so it will compile
 		double msgLat = msg.latitude;
 		double msgLon = msg.longitude;
-		GeographicLib::UTMUPS::Forward(msgLat, msgLon, zone, dummyNorthp, utm_x, utm_y, dummyGamma, dummyK, -1, false);
+		GeographicLib::UTMUPS::Forward(msgLat, msgLon, zone, dummyNorthp, utm_x, utm_y); //, dummyGamma, dummyK, -1, false);
 		utm_z = msg.altitude;
 		timestamp = msg.header.stamp;
 	}
