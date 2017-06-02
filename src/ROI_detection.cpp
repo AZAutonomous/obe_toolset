@@ -10,11 +10,12 @@
 #include <cmath>
 
 
-#define DEBUG_KENNON
+//#define DEBUG_KENNON
 //#define DESIGN_DAY
-
-#define EXPORT_IMAGES_LOCAL
+//#define EXPORT_IMAGES_LOCAL
 //#define KENNON_TEST_THRESH_VALS
+
+
 #ifdef DESIGN_DAY
 #include <stdlib.h>
 #include <time.h>
@@ -50,7 +51,7 @@ cv::Mat KennonsSobelStuff(cv::Mat image, int PxValThresh)
 	cv::Sobel(scratch, scratch_y, CV_32F, 0, 1); //y gradients in scratch_y
 	cv::Sobel(scratch, scratch, CV_32F, 1, 0); //scratch now has the x gradients
 	cv::magnitude(scratch, scratch_y, scratch); //scratch has the magnitude of both x and y gradients
-	#ifdef DESIGN_DAY
+	#ifdef DEBUG_KENNON
 	//displayImage(scratch);
 	cv::imwrite(cv::String("../images/processed/Edges.jpg"), scratch);
 	#endif
@@ -118,9 +119,8 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 	ROS_WARN_ONCE("Please note that the ROI detection currently can't handle location estimation with images that aren't downward-facing. Proceeding with roll, pitch = 0.");
 	//these are settable values that change how this function behaves
 	int threshVal = 99;
-	int boundingBoxPxUpperLim = 48;
+	int boundingBoxPxUpperLim = 148;
 	int boundingBoxPxLowerLim = 24;
-
 	int dilationSize = 9; //this parameter is used for blurring the thresholded image so that discontinuous edges will be connected.
 
 	std::list<CV_ImAndPose> output;
@@ -184,21 +184,21 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 		cv::Rect tempRect = cv::boundingRect(contours[contourIndex]); //generate a rectangle based on the contour
 		if(tempRect.width < boundingBoxPxUpperLim && tempRect.width > boundingBoxPxLowerLim && tempRect.height < boundingBoxPxUpperLim && tempRect.height > boundingBoxPxLowerLim) //this is the filter function for rectangles.
 		{
-			tempRect = padToSquare(tempRect, img.rows, img.cols, 4);
+			tempRect = padToSquare(tempRect, img.rows, img.cols, 2); //KDM EDIT 4 -> 2
 			boundingRectangles.push_back(tempRect);
 		}
 	}
 
-	#ifdef DESIGN_DAY
+	/*	#ifdef DESIGN_DAY
 	cv::Mat drawing = img.clone();
 	for(size_t i = 0; i < boundingRectangles.size(); i++)
 	{
 		cv::Scalar color = cv::Scalar(255, 0, 255);
 		cv::rectangle(drawing, boundingRectangles[i].tl(), boundingRectangles[i].br(), color, 3, 8, 0 );
 	}
-	displayImage(drawing);
+	//displayImage(drawing);
 	cv::imwrite(cv::String("../images/processed/BoundingBoxes.jpg"), drawing);
-	#endif
+	#endif */
 
 	//in order to find the ROI locations, we need to find the center of the image.
 	double x_distance, y_distance; //x distance is the physical distance in the horizontal direction (cols)
@@ -226,6 +226,10 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 		double width_offset, height_offset; //these are for the actual distance offsets due to the pixel offsets.
 		width_offset = double(x_roi - x_0) / img.cols * x_distance;
 		height_offset = double(y_0 - y_roi) / img.rows * y_distance; //Note that y_roi and y_0 are flipped. This is because y=0 is the top of the image and not the bottom.
+		#ifdef DEBUG_KENNON
+		ROS_INFO("Width_offset:%g", width_offset);
+		ROS_INFO("Height_offset: %g", height_offset);
+		#endif
 		//assign the x and y position of the target, taking plane rotation into account.
 		//NOTE: This method is invalid if there is anything other than 0 for roll and pitch.
 		msgData.x = imAndPose.x + (width_offset * sin(imAndPose.yaw)) + (height_offset * cos(imAndPose.yaw));
@@ -246,14 +250,6 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 		cv::imwrite(cv::String("../images/rois/Cropped_") + std::to_string(counter++) + cv::String(".jpg"), img(boundingRectangles[i]));
 		#endif
 	}
-	#ifdef DESIGN_DAY
-	for (size_t i = 0; i < 3; ++i) {
-		if (i < boundingRectangles.size())
-			cv::imwrite(cv::String("../images/processed/ROI_") + std::to_string(i) + cv::String(".jpg"), img(boundingRectangles[i]));
-		else
-			cv::imwrite(cv::String("../images/processed/ROI_") + std::to_string(i) + cv::String(".jpg"), img(boundingRectangles[boundingRectangles.size() - 1]));
-	}
-	#endif	
 	/*
 	size_t boundingRectIndex = 0;
 	for(size_t contourIndex = 0; contourIndex < contours.size(); ++contourIndex)

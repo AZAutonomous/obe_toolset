@@ -10,11 +10,11 @@
 #include <cmath>
 
 
-#define DEBUG_KENNON
+//#define DEBUG_KENNON
 //#define DESIGN_DAY
-
-#define EXPORT_IMAGES_LOCAL
+//#define EXPORT_IMAGES_LOCAL
 //#define KENNON_TEST_THRESH_VALS
+
 #ifdef DESIGN_DAY
 #include <stdlib.h>
 #include <time.h>

@@ -19,7 +19,7 @@ public:
 
 	void processImage(obe_toolset::ImageAndPose msg) //needs to be static so we can take its address
 	{
-		ROS_INFO("I recieved some data!");
+		//ROS_INFO("I recieved some data!");
 		CV_ImAndPose ROI_input; //this is a struct with cv::Mat image and doubles x,y,z for coordinates.
 		ROI_input.image = cv_bridge::toCvCopy(msg.image, "bgr8")->image; //pulls the image out of msg as a cv::Mat type
 		ROI_input.x = msg.x;//set the x,y,z coords (UTM)
