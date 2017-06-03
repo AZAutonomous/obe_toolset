@@ -27,7 +27,9 @@ public:
 		ROI_input.z = msg.z;
 		ROI_input.roll = msg.roll;
 		ROI_input.pitch = msg.pitch;
-		ROI_input.yaw = msg.yaw;
+		//Yaw comes in as North=0, East=90, clockwise. The algorithm expects 0 to be along the +x axis, increasing counterclockwise. We need to convert.
+		auto CompassAngle = 90.0 - msg.yaw; if(CompassAngle < 0.0) CompassAngle += 360.0;
+		ROI_input.yaw = CompassAngle;
 
 		//Process to extract the ROIs.
 		std::list<CV_ImAndPose> ROI_list = ROI_detection(ROI_input); //runs ROI detection on the image in cv_frame. ROIs are returned in a list of cv::Mat's.
