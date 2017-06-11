@@ -21,14 +21,12 @@ public:
 	{
 		CV_ImAndPose ROI_input; //this is a struct with cv::Mat image and doubles x,y,z for coordinates.
 		ROI_input.image = cv_bridge::toCvCopy(msg.image, "bgr8")->image; //pulls the image out of msg as a cv::Mat type
-		ROI_input.x = msg.x;//set the x,y,z coords (UTM)
-		ROI_input.y = msg.y;
+		ROI_input.lat = msg.lat;//set the lat, lon, and z
+		ROI_input.lon = msg.lon;
 		ROI_input.z = msg.z;
 		ROI_input.roll = msg.roll;
 		ROI_input.pitch = msg.pitch;
-		//Yaw comes in as North=0, East=90, clockwise. The algorithm expects 0 to be along the +x axis, increasing counterclockwise. We need to convert.
-		auto CompassAngle = 90.0 - msg.yaw; if(CompassAngle < 0.0) CompassAngle += 360.0;
-		ROI_input.yaw = CompassAngle;
+		ROI_input.yaw = msg.yaw;
 
 		//Process to extract the ROIs.
 		std::list<CV_ImAndPose> ROI_list = Small_ROI_detection(ROI_input); //runs ROI detection on the image in cv_frame. ROIs are returned in a list of cv::Mat's.
@@ -39,8 +37,8 @@ public:
 		for(auto it = ROI_list.begin(); it != end; it++)
 		{
 			obe_toolset::ImageAndPose msg;
-			msg.x = it->x;
-			msg.y = it->y;
+			msg.lat = it->lat;
+			msg.lon = it->lon;
 			msg.z = it->z;
 			msg.roll = it->roll;
 			msg.pitch = it->pitch;
@@ -56,31 +54,6 @@ private:
 	ros::Publisher pub;
 	ros::Subscriber sub;
 }; //end class SubPub definition
-
-/*
-void processImage(obe_toolset::ImageAndPose msg)
-{
-	CV_ImAndPose ROI_input; //this is a struct with cv::Mat image and doubles x,y,z for coordinates.
-	ROI_input.image = cv_bridge::toCvCopy(msg.image, "bgr8")->image; //pulls the image out of msg as a cv::Mat type
-	ROI_input.x = msg.position.x;//set the x,y,z coords (UTM)
-	ROI_input.y = msg.position.y;
-	ROI_input.z = msg.position.z;
-
-	//Process to extract the ROIs.
-	std::list<CV_ImAndPose> ROI_list = ROI_detection(ROI_input, 200); //runs ROI detection on the image in cv_frame. ROIs are returned in a list of cv::Mat's.
-
-	//Publish everything deemed to be an ROI
-	for(auto it = ROI_list.begin(), end = ROI_list.end(); it != end; ++it)
-	{
-		obe_toolset::ImageAndPose msg;
-		msg.position.x = it->x;
-		msg.position.y = it->y;
-		msg.position.z = it->z;
-		msg.image = *(cv_bridge::CvImage(std_msgs::Header(), "bgr8", it->image).toImageMsg()); //cv_bridge converts cv::Mat to a message pointer. this pointer is dereferenced and put in the msg's image slot.
-		//this->pub.publish(msg); //Finally we can send the thing off!
-	}
-}
-*/
 
 
 int main(int argc, char** argv)

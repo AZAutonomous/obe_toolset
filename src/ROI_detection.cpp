@@ -10,11 +10,10 @@
 #include <cmath>
 
 
-//#define DEBUG_KENNON
+#define DEBUG_KENNON
 //#define DESIGN_DAY
-//#define EXPORT_IMAGES_LOCAL
+#define EXPORT_IMAGES_LOCAL
 //#define KENNON_TEST_THRESH_VALS
-
 
 #ifdef DESIGN_DAY
 #include <stdlib.h>
@@ -52,7 +51,6 @@ cv::Mat KennonsSobelStuff(cv::Mat image, int PxValThresh)
 	cv::Sobel(scratch, scratch, CV_32F, 1, 0); //scratch now has the x gradients
 	cv::magnitude(scratch, scratch_y, scratch); //scratch has the magnitude of both x and y gradients
 	#ifdef DEBUG_KENNON
-	//displayImage(scratch);
 	cv::imwrite(cv::String("../images/processed/Edges.jpg"), scratch);
 	#endif
 	scratch = scratch > PxValThresh;
@@ -122,6 +120,7 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 	int boundingBoxPxUpperLim = 148;
 	int boundingBoxPxLowerLim = 24;
 	int dilationSize = 9; //this parameter is used for blurring the thresholded image so that discontinuous edges will be connected.
+	//END SETTABLE VALUES
 
 	std::list<CV_ImAndPose> output;
 	cv::Mat img(imAndPose.image); //extract the image from the data packet
@@ -207,6 +206,7 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 	y_0 = img.rows / 2.0;
 	x_distance = 2.0 * imAndPose.z * tan(degrees2radians(camera_horizontal_FOV_degrees) / 2.0);
 	y_distance = 2.0 * imAndPose.z * tan(degrees2radians(camera_vertical_FOV_degrees) / 2.0);
+	double yaw_rad = degrees2radians(imAndPose.yaw);
 
 	#ifdef DEBUG_KENNON
 	ROS_INFO("x distance: %g\ty distance: %g", x_distance, y_distance);
@@ -223,7 +223,7 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 		x_roi = boundingRectangles[i].x + (boundingRectangles[i].width / 2.0);
 		y_roi = boundingRectangles[i].y + (boundingRectangles[i].height / 2.0);
 		//find the distance offset in the width and height directions.
-		double width_offset, height_offset; //these are for the actual distance offsets due to the pixel offsets.
+		double width_offset, height_offset; //these are for the actual distance offsets in meters due to the pixel offsets.
 		width_offset = double(x_roi - x_0) / img.cols * x_distance;
 		height_offset = double(y_0 - y_roi) / img.rows * y_distance; //Note that y_roi and y_0 are flipped. This is because y=0 is the top of the image and not the bottom.
 		#ifdef DEBUG_KENNON
@@ -232,8 +232,10 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 		#endif
 		//assign the x and y position of the target, taking plane rotation into account.
 		//NOTE: This method is invalid if there is anything other than 0 for roll and pitch.
-		msgData.x = imAndPose.x + (width_offset * sin(imAndPose.yaw)) + (height_offset * cos(imAndPose.yaw));
-		msgData.y = imAndPose.y + (width_offset * -1.0 * cos(imAndPose.yaw)) + (-1.0 * height_offset * sin(imAndPose.yaw));
+		msgData.lat = imAndPose.lat + (double(0.000009009256942707) * ((height_offset * cos(yaw_rad)) - (width_offset * sin(yaw_rad))));
+		msgData.lon = imAndPose.lon + (double(0.000011396372154864) * ((height_offset * sin(yaw_rad)) + (width_offset * cos(yaw_rad))));
+		//msgData.x = imAndPose.x + (width_offset * sin(imAndPose.yaw)) + (height_offset * cos(imAndPose.yaw));
+		//msgData.y = imAndPose.y + (width_offset * -1.0 * cos(imAndPose.yaw)) + (-1.0 * height_offset * sin(imAndPose.yaw));
 		msgData.z = 0; //Anyone who has a preference for what this is can change it, but I assumed it should be 0 since the targets are on the ground.
 
 		//Now, set the RPY of the image. Yaw is the only one that's important and used as of 4.26.17, so the others will be set as 0.
@@ -243,22 +245,13 @@ std::list<CV_ImAndPose> ROI_detection(CV_ImAndPose imAndPose, double camera_vert
 
 		output.push_back(msgData); //save it!
 		#ifdef DEBUG_KENNON
-		ROS_INFO("ROI at pixel value %g,%g of image centered at %g,%g,%g at yaw %g (rad) is claimed to be at %g,%g", x_roi, y_roi, imAndPose.x, imAndPose.y, imAndPose.z, imAndPose.yaw, msgData.x, msgData.y);
+		ROS_INFO("ROI at pixel value %g,%g of image centered at %f,%f,%g at yaw %g (Compass angle, degrees) is claimed to be at %f,%f", x_roi, y_roi, imAndPose.lat, imAndPose.lon, imAndPose.z, imAndPose.yaw, msgData.lat, msgData.lon);
 		#endif
 		#ifdef EXPORT_IMAGES_LOCAL
         	static int counter = 0;
 		cv::imwrite(cv::String("../images/rois/Cropped_") + std::to_string(counter++) + cv::String(".jpg"), img(boundingRectangles[i]));
 		#endif
 	}
-	/*
-	size_t boundingRectIndex = 0;
-	for(size_t contourIndex = 0; contourIndex < contours.size(); ++contourIndex)
-	{
-		cv::Rect tempRect = cv::boundingRect(contours[contourIndex]); //generate a rectangle based on the contour
-		if(tempRect.width > 75 || tempRect.width > 75) //this is the filter function for rectangles.
-
-	}
-	*/
 
 	return output;
 }

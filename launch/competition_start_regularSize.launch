@@ -49,28 +49,28 @@
 	<!-- Processor Nodes -->
 		<!--launch the processor nodes (currently 5). Copy and paste this chunk n times and update the name= and to= fields. ALSO UPDATE THIS IN THE DISPATCHER NODE'S PARAMS BELOW-->
 		<!--These ones run on the onboard system-->
-			<node machine="obe" name="ProcessorNode1" pkg="obe_toolset" type="SmallProcessor" respawn="true">
+			<node machine="obe" name="ProcessorNode1" pkg="obe_toolset" type="Processor" respawn="true">
 				<remap from="/obe/imagePipeN" to="/obe/imagePipe1" />
 			</node>	
 	
-			<node machine="obe" name="ProcessorNode2" pkg="obe_toolset" type="SmallProcessor" respawn="true">
+			<node machine="obe" name="ProcessorNode2" pkg="obe_toolset" type="Processor" respawn="true">
 				<remap from="/obe/imagePipeN" to="/obe/imagePipe2" />
 			</node>
 
-			<!-- <node machine="obe" name="ProcessorNode3" pkg="obe_toolset" type="SmallProcessor" respawn="true">
+			<!-- <node machine="obe" name="ProcessorNode3" pkg="obe_toolset" type="Processor" respawn="true">
 				<remap from="/obe/imagePipeN" to="/obe/imagePipe3" />
 			</node>
 
-			<node machine="obe" name="ProcessorNode4" pkg="obe_toolset" type="SmallProcessor" respawn="true">
+			<node machine="obe" name="ProcessorNode4" pkg="obe_toolset" type="Processor" respawn="true">
 				<remap from="/obe/imagePipeN" to="/obe/imagePipe4" />
 			</node>
 
-			<node machine="obe" name="ProcessorNode5" pkg="obe_toolset" type="SmallProcessor" respawn="true">
+			<node machine="obe" name="ProcessorNode5" pkg="obe_toolset" type="Processor" respawn="true">
 				<remap from="/obe/imagePipeN" to="/obe/imagePipe5" />
 			</node>
 			-->
 
-			<!-- <node machine="obe" name="ProcessorNode6" pkg="obe_toolset" type="SmallProcessor" respawn="true">
+			<!-- <node machine="obe" name="ProcessorNode6" pkg="obe_toolset" type="Processor" respawn="true">
 				<remap from="/obe/imagePipeN" to="/obe/imagePipe6" />
 			</node>	-->
 		<!--These ones run on the ground station (in case the obe doesn't have enough processing power and the rf link has extra bandwidth available-->

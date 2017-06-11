@@ -6,19 +6,33 @@
 #include <obe_toolset/ImageAndPose.h> //Needed for the custom Image and Pose message type
 #include <string>
 #include <vector>
-#include <GeographicLib/UTMUPS.hpp> //for conversion from Lat Lon to UTM. In order to get this, download the source, unzip it, cd into it, mkdir build, cd build, cmake .., make, make install
+//#include <GeographicLib/UTMUPS.hpp> //for conversion from Lat Lon to UTM. In order to get this, download the source, unzip it, cd into it, mkdir build, cd build, cmake .., make, make install
 #include <sensor_msgs/NavSatFix.h> //for the mavros NavSatFix message
+#include <sensor_msgs/Imu.h> // for the Imu data message
+#include <tf/transform_datatypes.h> //for quaternion to yaw
 
 //#include "std_msgs/String.h"
 //#define ONEATATIME //if this is defined, it will do one file at a time and pause in between files.
 
 //Global variables and classes that need to be accessed in the callback =(
-double utm_x, utm_x_prev;
-double utm_y, utm_y_prev;
-double utm_z, utm_z_prev;
-ros::Time timestamp, timestamp_prev;
-static const double SEARCH_AREA_ALTITUDE = 0; //This probably needs to be updated for camera agl altitude location calculations to be correct in the Processor nodes
+double curr_lat, prev_lat;
+double curr_lon, prev_lon;
+double curr_z, prev_z;
+ros::Time curr_timestamp, prev_timestamp;
+static const double SEARCH_AREA_ALTITUDE = 4.2672; //This needs to be updated for camera agl altitude location calculations to be correct in the Processor nodes. For the competition in MD, it's about 14 feet (from google maps, guestimate)
 int fix_wait_ctr = -2;
+
+double curr_yaw;
+bool yaw_valid = false;
+
+void orientationCallback(const sensor_msgs::Imu msg)
+{
+	yaw_valid = true;
+	tf::Quaternion quat;
+	tf::quaternionMsgToTF(msg.orientation, quat);
+	double dummy1, dummy2;
+	tf::Matrix3x3(quat).getRPY(dummy1, dummy2, curr_yaw); //this is how we update yaw
+}
 
 void locationCallback(const sensor_msgs::NavSatFix msg) //all this does is update the global variables listed above (for location).
 {
@@ -31,20 +45,15 @@ void locationCallback(const sensor_msgs::NavSatFix msg) //all this does is updat
 		if (fix_wait_ctr < 0)
 			fix_wait_ctr += 1;
 		//move the current data to the old data slot
-		utm_x_prev = utm_x;
-		utm_y_prev = utm_y;
-		utm_z_prev = utm_z;
-		timestamp_prev = timestamp;
+		prev_lat = curr_lat;
+		prev_lon = curr_lon;
+		prev_z = curr_z;
+		prev_timestamp = curr_timestamp;
 
-		int zone; //dummy var for the UTMUPS conversion. This might be important at some point though, so maybe we should send it along with our ImAndPose stuff...
-		bool dummyNorthp; //Hemisphere (true==northern)
-		double dummyGamma; //no idea, dummy var so it will compile
-		double dummyK; //no idea; dummy var so it will compile
-		double msgLat = msg.latitude;
-		double msgLon = msg.longitude;
-		GeographicLib::UTMUPS::Forward(msgLat, msgLon, zone, dummyNorthp, utm_x, utm_y); //, dummyGamma, dummyK, -1, false);
-		utm_z = msg.altitude;
-		timestamp = msg.header.stamp;
+		curr_lat = msg.latitude;
+		curr_lon = msg.longitude;
+		curr_z = msg.altitude - SEARCH_AREA_ALTITUDE; //this is 14 for the base in Maryland (makes since that it's pretty low; it's a naval base that sits on the ocean.
+		curr_timestamp = msg.header.stamp;
 	}
 }
 
@@ -140,12 +149,18 @@ int main(int argc, char** argv)
 						impose_msg.image = *(cv_bridge::CvImage(std_msgs::Header(), "bgr8", newImage).toImageMsg()); //The meat of this line is from the image_transport tutorial; I just de-reference their piece to get a sensor_msgs::Image.  Note: There's probably a better way to do this, but it will work for now.
 
 						//This is the point where the fakeing things comes in.
-						impose_msg.x = 0; //fakes an x UTM value
-						impose_msg.y = 0; //etc...
-						impose_msg.z = 60.96; //This is actually a decent guess (~200 ft)
+						ros::Duration elapsedTime = curr_timestamp - prev_timestamp;
+						double lat_offset = (2 / elapsedTime.toSec()) * (curr_lat - prev_lat); //the "2" is from Rick's estimate of time between when an image is captured and when it is finally done uploading.
+						impose_msg.lat = curr_lat - lat_offset; //approximates a latitude value (linear approximation based on 2 most recent locations)
+						double lon_offset = (2 / elapsedTime.toSec()) * (curr_lon - prev_lon);
+						impose_msg.lon = curr_lon - lon_offset;
+						double z_offset = (2 / elapsedTime.toSec()) * (curr_z - prev_z);
+						impose_msg.z = curr_z - z_offset; //This is actually a decent guess (~200 ft)
 						impose_msg.roll = 0.0;
 						impose_msg.pitch = 0.0;
-						impose_msg.yaw = 0.0; //this is the only one that's used as of 4.26.17
+						//Concerning Yaw: we really should be using the /mavros/imu/data to give us the yaw, particularly because the plane could be "crabbing" (flying in a direction different than the one it's pointing due to wind)
+						//But for now, it's simply found by 
+						impose_msg.yaw = 92929292; //this is the only one that's used as of 4.26.17
 						//End the faking it stuff.
 
 						//publish to the current pipe that's due for another message. NOTE: In the future, this could have a system that keeps track of busy nodes so that no particular node gets bogged down. I'm kind of assuming that we have enough nodes and a fast enough ROI algorithm and randomness is on our side so that this doesn't get out of hand.

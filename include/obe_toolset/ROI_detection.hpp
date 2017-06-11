@@ -16,7 +16,8 @@
 
 struct CV_image_and_position__struct{
 	cv::Mat image;
-	double x, y, z;// x and y are utm (EastNorthUp scheme), z is AGL altitude. All are in meters
+//	double x, y, z;// x and y are utm (EastNorthUp scheme), z is AGL altitude. All are in meters
+	double lat, lon, z; //lat and lon are in decimal degrees, z is AGL altitude in meters.
 	double roll, pitch, yaw; //These are in radians. Yaw is 0 at east, pi/2 at north. (Follows EastNorthUp scheme)
 };
 

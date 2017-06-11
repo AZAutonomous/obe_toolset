@@ -9,7 +9,7 @@
 #include <vector>
 
 //#include "std_msgs/String.h"
-#define ONEATATIME //if this is defined, it will do one file at a time and pause in between files.
+//#define ONEATATIME //if this is defined, it will do one file at a time and pause in between files.
 
 static const std::string NumPipesParamPath("/DispatcherNode/numPipes");
 
@@ -107,12 +107,12 @@ int main(int argc, char** argv)
 					impose_msg.image = *(cv_bridge::CvImage(std_msgs::Header(), "bgr8", newImage).toImageMsg()); //The meat of this line is from the image_transport tutorial; I just de-reference their piece to get a sensor_msgs::Image.  Note: There's probably a better way to do this, but it will work for now.
 
 					//This is the point where the fakeing things comes in.
-					impose_msg.x = 0; //fakes an x UTM value
-					impose_msg.y = 0; //etc...
+					impose_msg.lat = 38.143156; //fakes an x UTM value
+					impose_msg.lon = -76.433880; //etc...
 					impose_msg.z = 60.96; //This is actually a decent guess (~200 ft)
 					impose_msg.roll = 0.0;
 					impose_msg.pitch = 0.0;
-					impose_msg.yaw = 0.0; //this is the only one that's used as of 4.26.17
+					impose_msg.yaw = 90.0; //this is the only one that's used as of 4.26.17
 					//End the faking it stuff.
 
 					//publish to the current pipe that's due for another message. NOTE: In the future, this could have a system that keeps track of busy nodes so that no particular node gets bogged down. I'm kind of assuming that we have enough nodes and a fast enough ROI algorithm and randomness is on our side so that this doesn't get out of hand.
