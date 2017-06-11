@@ -2,9 +2,6 @@ cmake_minimum_required(VERSION 2.8.4)
 project(obe_toolset)
 SET(CMAKE_CXX_FLAGS "-std=c++0x") #May not be the best way to do this, but it works for now...
 
-#These were from me testing something...
-find_package (GeographicLib 1.48 REQUIRED)
-
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   image_transport
