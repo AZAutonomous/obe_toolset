@@ -88,8 +88,8 @@
 	<!-- End Dispatcher node-->
 
 
-	<!-- Classifier node -->
-		<node name="Classify_ROS" pkg="ground_toolset" type="classify_ros.py" respawn="true" />
+	<!-- Classifier node (CURRENTLY DISABLED, START IT MANUALLY) -->
+		<!-- <node name="Classify_ROS" pkg="ground_toolset" type="classify_ros.py" respawn="true" /> -->
 	<!-- End Classifier Node -->
 
 </launch>
